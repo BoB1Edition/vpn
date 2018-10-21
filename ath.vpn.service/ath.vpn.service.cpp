@@ -5,12 +5,23 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "ATHService.h"
+#include "EventMessage.h"
 
 int main(int argc, char *argv[]) {
 
+	//Sleep(10 *1000);
+	EventMessage ev;
+	LPWSTR message = new WCHAR[32000];
+	//GetCurrentProcessId();
+	wsprintf(message, L"main start: pid %i\0", GetCurrentProcessId());
+	//wprintf(L"servicePath: %s\n", servicePath);
+	ev.addLog(message);
 	ATHService service;
 
 	if (argc == 2) {
+		if (_strcmpi("run", argv[1]) == 0) {
+			return service.init();
+		}
 		if (_strcmpi("install", argv[1]) == 0) {
 			return service.install();
 		}
@@ -30,7 +41,7 @@ int main(int argc, char *argv[]) {
 
 		return 0;
 	}
-    return service.run();
+    return service.main(argc, NULL);
 
 }
 

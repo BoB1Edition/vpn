@@ -74,6 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <EnableManagedIncrementalBuild>true</EnableManagedIncrementalBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -108,6 +109,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <UpdateFileHashes>true</UpdateFileHashes>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -151,9 +155,15 @@
   <ItemGroup>
     <ClCompile Include="ath.vpn.service.cpp" />
     <ClCompile Include="ATHService.cpp" />
+    <ClCompile Include="EventMessage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATHService.h" />
+    <ClInclude Include="EventMessage.h" />
+    <ClInclude Include="Event_log.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Event_log.mc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

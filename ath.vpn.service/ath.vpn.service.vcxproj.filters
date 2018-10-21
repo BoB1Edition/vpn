@@ -24,10 +24,22 @@
     <ClCompile Include="ATHService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EventMessage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATHService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EventMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Event_log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Event_log.mc" />
   </ItemGroup>
 </Project>
