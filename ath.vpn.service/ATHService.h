@@ -5,20 +5,8 @@
 #include <psapi.h>
 #include "EventMessage.h"
 #include "wscapi.h"
-
-enum tagVPNCOMMAND{
-	CHECKAV,
-	CHECKFW,
-	CHECKUP,
-	CHANGEFW,
-	RESTOREFW,
-	FWOK
-};
-
-struct VPNCOMMAND{
-	int messsage;
-	tagVPNCOMMAND command;
-};
+#include "VPMCOMMAND.h"
+#include "ATHFWSetup.h"
 
 class ATHService;
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
@@ -75,6 +63,8 @@ private:
 	int ThreadPipe();
 
 	int CheckFirewall();
+	int CheckAntivirus();
+	int CheckUpdate();
 
 };
 

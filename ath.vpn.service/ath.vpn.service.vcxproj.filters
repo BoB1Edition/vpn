@@ -27,6 +27,9 @@
     <ClCompile Include="EventMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ATHFWSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATHService.h">
@@ -38,8 +41,15 @@
     <ClInclude Include="Event_log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\Shared\VPMCOMMAND.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ATHFWSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Event_log.mc" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

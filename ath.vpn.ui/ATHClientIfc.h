@@ -2,20 +2,7 @@
 
 
 #include "ClientIfc.h"
-
-enum tagVPNCOMMAND {
-	CHECKAV,
-	CHECKFW,
-	CHECKUP,
-	CHANGEFW,
-	RESTOREFW,
-	FWOK
-};
-
-struct VPNCOMMAND {
-	int messsage;
-	tagVPNCOMMAND command;
-};
+#include "VPMCOMMAND.h"
 
 class ATHClientIfc : protected ClientIfc
 {

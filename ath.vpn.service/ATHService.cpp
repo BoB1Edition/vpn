@@ -240,6 +240,7 @@ int ATHService::ThreadAVScan()
 
 int ATHService::ThreadPipe()
 {
+	ATHFWSetup ath;
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadPipe: Start");
 	ev.addLog(errMessage);
@@ -277,15 +278,52 @@ int ATHService::ThreadPipe()
 		wsprintf(errMessage, L"Command %i ,%i", command.command, command.messsage);
 		ev.addLog(errMessage);
 		switch (command.command) {
-		case tagVPNCOMMAND::CHECKAV:
-			if(CheckFirewall() == 0)
+		case tagVPNCOMMAND::CHECKFW:
+			if (CheckFirewall() == 0) {
 				wsprintf(errMessage, L"Firewall ok");
 				ev.addLog(errMessage);
 				command.command = tagVPNCOMMAND::FWOK;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
+			else {
+				wsprintf(errMessage, L"Firewall fail");
+				ev.addLog(errMessage);
+				command.command = tagVPNCOMMAND::FWFAIL;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
 			break;
+		case tagVPNCOMMAND::CHECKAV:
+			if (CheckAntivirus() == 0) {
+				wsprintf(errMessage, L"Antivirus ok");
+				ev.addLog(errMessage);
+				command.command = tagVPNCOMMAND::AVOK;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
+			else {
+				wsprintf(errMessage, L"Antivirus fail");
+				ev.addLog(errMessage);
+				command.command = tagVPNCOMMAND::AVFAIL;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
+			break;
+		case tagVPNCOMMAND::CHECKUP:
+			if (CheckUpdate() == 0) {
+				wsprintf(errMessage, L"Update ok");
+				ev.addLog(errMessage);
+				command.command = tagVPNCOMMAND::UPOK;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
+			else {
+				wsprintf(errMessage, L"Update fail");
+				ev.addLog(errMessage);
+				command.command = tagVPNCOMMAND::UPFAIL;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			}
+			break;
+		case tagVPNCOMMAND::CHANGEFW:
+			
 		default:
-			wsprintf(errMessage, L"Firewall ok");
+			wsprintf(errMessage, L"command.command: %i", command.command);
 			ev.addLog(errMessage);
 			WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 		}
@@ -309,6 +347,16 @@ int ATHService::CheckFirewall()
 	if (result != S_OK) {
 		return 255;
 	}
+	return 0;
+}
+
+int ATHService::CheckAntivirus()
+{
+	return 0;
+}
+
+int ATHService::CheckUpdate()
+{
 	return 0;
 }
 
