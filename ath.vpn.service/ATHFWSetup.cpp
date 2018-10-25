@@ -97,53 +97,97 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 	hr = fwPolicy2->get_DefaultOutboundAction(NET_FW_PROFILE2_PRIVATE, &fwsettings.privateDefaultOutboundAction);
 	
 	Json::Value root;
-	Json::Value jdomainProfileEnabled, jprivateProfileEnabled, jpublicProfileEnabled;
-	Json::Value jdomainBlockAllInboundTraffic, jpublicBlockAllInboundTraffic, jprivateBlockAllInboundTraffic;
-	Json::Value jdomainDefaultInboundAction, jpublicDefaultInboundAction, jprivateDefaultInboundAction;
-	Json::Value jdomainDefaultInboundAction, jpublicDefaultInboundAction, jprivateDefaultInboundAction;
-	Json::Value jdomainDefaultOutboundAction, jpublicDefaultOutboundAction, jprivateDefaultOutboundAction;
 
-	LPWSTR domainProfileEnabled = new WCHAR[10], privateProfileEnabled = new WCHAR[10], publicProfileEnabled = new WCHAR[10];
-	LPWSTR domainBlockAllInboundTraffic = new WCHAR[10], publicBlockAllInboundTraffic = new WCHAR[10], privateBlockAllInboundTraffic = new WCHAR[10];
-	wsprintf(domainProfileEnabled, L"%t\0", fwsettings.domainProfileEnabled);
-	jdomainProfileEnabled["domainProfileEnabled"] = domainProfileEnabled;
+	root["domainProfileEnabled"] = VariantBoolToLpwstr(fwsettings.domainProfileEnabled);
+	root["privateProfileEnabled"] = VariantBoolToLpwstr(fwsettings.privateProfileEnabled);
+	root["publicProfileEnabled"] = VariantBoolToLpwstr(fwsettings.publicProfileEnabled);
 	
-	wsprintf(privateProfileEnabled, L"%t\0", fwsettings.privateProfileEnabled);
-	jprivateProfileEnabled["privateProfileEnabled"] = privateProfileEnabled;
-	
-	wsprintf(publicProfileEnabled, L"%t\0", fwsettings.publicProfileEnabled);
-	jpublicProfileEnabled["publicProfileEnabled"] = publicProfileEnabled;
+	root["domainBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.domainBlockAllInboundTraffic);
+	root["privateBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.privateBlockAllInboundTraffic);
+	root["publicBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.publicBlockAllInboundTraffic);
 
+	root["domainDefaultInboundAction"] = (int)fwsettings.domainDefaultInboundAction;
+	root["publicDefaultInboundAction"] = (int)fwsettings.publicDefaultInboundAction;
+	root["privateDefaultInboundAction"] = (int)fwsettings.privateDefaultInboundAction;
 
-	root.append(jdomainProfileEnabled);
-	root.append(jprivateProfileEnabled);
-	root.append(jpublicProfileEnabled);
+	root["domainDefaultOutboundAction"] = (int)fwsettings.domainDefaultOutboundAction;
+	root["publicDefaultOutboundAction"] = (int)fwsettings.publicDefaultOutboundAction;
+	root["privateDefaultOutboundAction"] = (int)fwsettings.privateDefaultOutboundAction;
+
 
 	IUnknown *pUnk = NULL;
 	RulesObject->get__NewEnum(&pUnk);
 	IEnumVARIANT *pEnum;
 	HRESULT hr = pUnk->QueryInterface(IID_IEnumVARIANT, (void**)&pEnum);
-	BSTR bstr = NULL;
 	VARIANT var;
 	INetFwRule *pADs = NULL;
 	ULONG lFetch;
 	IDispatch *pDisp = NULL;
 	VariantInit(&var);
 	hr = pEnum->Next(1, &var, &lFetch);
+
+	Json::Value rules;
+
 	while (hr == S_OK)
 	{
 		if (lFetch == 1)
 		{
+
 			pDisp = V_DISPATCH(&var);
 			pDisp->QueryInterface(IID_INetFwRule, (void**)&pADs);
-			pADs->get_Name(&bstr);
+			FWStruct * fw = new FWStruct;
+			pADs->get_Action(&fw->Action);
+			pADs->get_ApplicationName(&fw->ApplicationName);
+			pADs->get_Description(&fw->Description);
+			pADs->get_Direction(&fw->Direction);
+			pADs->get_EdgeTraversal(&fw->EdgeTraversal);
+			pADs->get_Enabled(&fw->Enabled);
+			pADs->get_Grouping(&fw->Grouping);
+			pADs->get_IcmpTypesAndCodes(&fw->IcmpTypesAndCodes);
+			pADs->get_Interfaces(&fw->Interfaces);
+			pADs->get_InterfaceTypes(&fw->InterfaceTypes);
+			pADs->get_LocalAddresses(&fw->LocalAddresses);
+			pADs->get_LocalPorts(&fw->LocalPorts);
+			pADs->get_Name(&fw->Name);
+			pADs->get_Profiles(&fw->Profiles);
+			pADs->get_Protocol(&fw->Protocol);
+			pADs->get_RemoteAddresses(&fw->RemoteAddresses);
+			pADs->get_RemotePorts(&fw->RemotePorts);
+			pADs->get_ServiceName(&fw->ServiceName);
 
-			SysFreeString(bstr);
-			pADs->Release();
+
+			Json::Value rule;
+
+			rule["Action"] = fw->Action;
+			rule["ApplicationName"] = fw->Action;
+			rule["Description"] = BstrToLpwstr(fw->Description);
+			rule["Direction"] = fw->Direction;
+
+			rule["EdgeTraversal"] = VariantBoolToLpwstr(fw->EdgeTraversal);
+			rule["Enabled"] = VariantBoolToLpwstr(fw->Enabled);
+			rule["Grouping"] = BstrToLpwstr(fw->Grouping);
+			rule["IcmpTypesAndCodes"] = BstrToLpwstr(fw->IcmpTypesAndCodes);
+			rule["Interfaces"] = BstrToLpwstr(fw->Interfaces.bstrVal);
+			rule["InterfaceTypes"] = BstrToLpwstr(fw->InterfaceTypes);
+			rule["LocalAddresses"] = BstrToLpwstr(fw->LocalAddresses);
+			rule["LocalPorts"] = BstrToLpwstr(fw->LocalPorts);
+			rule["Name"] = BstrToLpwstr(fw->Name);
+			rule["Profiles"] = fw->Profiles;
+			rule["Protocol"] = fw->Protocol;
+			rule["RemoteAddresses"] = BstrToLpwstr(fw->RemoteAddresses);
+			rule["RemotePorts"] = BstrToLpwstr(fw->RemotePorts);
+			rule["ServiceName"] = BstrToLpwstr(fw->ServiceName);
+			root["Rules"].append(root);
+			//pADs->Release();
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
 	}
+	Json::StyledStreamWriter writer;
+	std::ofstream fwsetting("fwsettings.config");
+	writer.write(fwsetting, root);
+	fwsetting.flush();
+	fwsetting.close();
 	return 0;
 }
 

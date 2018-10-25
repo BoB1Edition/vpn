@@ -1,6 +1,7 @@
 #pragma once
 #include <netfw.h>
 #include "json\json.h"
+#include <iostream>
 
 struct FWStruct {
 	NET_FW_ACTION				Action;
@@ -54,5 +55,23 @@ private:
 	INetFwPolicy2* fwPolicy2 = NULL;
 	INetFwPolicy* fwPolicy = NULL;
 	INetFwRules *RulesObject = NULL;
+
+	inline LPWSTR BstrToLpwstr(BSTR str) {
+		LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
+		wsprintf(lpwstr, L"%s\0", str);
+		return lpwstr;
+	}
+
+	inline LPWSTR VariantBoolToLpwstr(VARIANT_BOOL vbool) {
+		LPWSTR ret = new WCHAR[10];
+		if (vbool) {
+			wsprintf(ret, L"true\0");
+		}
+		else {
+			wsprintf(ret, L"false\0");
+		}
+
+		return ret;
+	}
 };
 
