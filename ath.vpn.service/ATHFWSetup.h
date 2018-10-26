@@ -2,6 +2,7 @@
 #include <netfw.h>
 #include "json\json.h"
 #include <iostream>
+#include <fstream>
 
 struct FWStruct {
 	NET_FW_ACTION				Action;

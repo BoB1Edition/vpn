@@ -118,7 +118,7 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 	IUnknown *pUnk = NULL;
 	RulesObject->get__NewEnum(&pUnk);
 	IEnumVARIANT *pEnum;
-	HRESULT hr = pUnk->QueryInterface(IID_IEnumVARIANT, (void**)&pEnum);
+	hr = pUnk->QueryInterface(IID_IEnumVARIANT, (void**)&pEnum);
 	VARIANT var;
 	INetFwRule *pADs = NULL;
 	ULONG lFetch;
@@ -177,14 +177,14 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			rule["RemoteAddresses"] = BstrToLpwstr(fw->RemoteAddresses);
 			rule["RemotePorts"] = BstrToLpwstr(fw->RemotePorts);
 			rule["ServiceName"] = BstrToLpwstr(fw->ServiceName);
-			root["Rules"].append(root);
+			root["Rules"].append(rule);
 			//pADs->Release();
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
 	}
 	Json::StyledStreamWriter writer;
-	std::ofstream fwsetting("fwsettings.config");
+	std::ofstream fwsetting(fName);
 	writer.write(fwsetting, root);
 	fwsetting.flush();
 	fwsetting.close();

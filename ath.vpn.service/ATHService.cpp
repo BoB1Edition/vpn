@@ -244,8 +244,36 @@ int ATHService::ThreadPipe()
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadPipe: Start");
 	ev.addLog(errMessage);
-	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,	PIPE_UNLIMITED_INSTANCES,
-		sizeof(VPNCOMMAND), sizeof(VPNCOMMAND), 5000, NULL);
+	SECURITY_ATTRIBUTES sa;
+	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+	PSID pEveryoneSID = NULL;
+	EXPLICIT_ACCESS ea;
+	ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
+	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pEveryoneSID)) {
+		err = GetLastError();
+		wsprintf(errMessage, L"hPipe: err %i", err);
+		ev.addLog(errMessage);
+		return err;
+	}
+
+	ea.grfAccessPermissions = KEY_ALL_ACCESS;
+	ea.grfAccessMode = SET_ACCESS;
+	ea.grfInheritance = NO_INHERITANCE;
+	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea.Trustee.ptstrName = (LPTSTR)pEveryoneSID;
+	PSECURITY_DESCRIPTOR pSD = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
+	PACL pACL;
+	SetEntriesInAcl(1, &ea, NULL, &pACL);
+	InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION);
+	if (!SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE)) {
+		err = GetLastError();
+		wsprintf(errMessage, L"hPipe: err %i", err);
+		ev.addLog(errMessage);
+		return err;
+	}
+	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,	PIPE_UNLIMITED_INSTANCES,
+		sizeof(VPNCOMMAND), sizeof(VPNCOMMAND), 5000, &sa);
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		err = GetLastError();
 		wsprintf(errMessage, L"hPipe: err %i", err);
@@ -278,50 +306,51 @@ int ATHService::ThreadPipe()
 		wsprintf(errMessage, L"Command %i ,%i", command.command, command.messsage);
 		ev.addLog(errMessage);
 		switch (command.command) {
-		case tagVPNCOMMAND::CHECKFW:
+		case CHECKFW:
 			if (CheckFirewall() == 0) {
 				wsprintf(errMessage, L"Firewall ok");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::FWOK;
+				command.command = FWOK;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			else {
 				wsprintf(errMessage, L"Firewall fail");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::FWFAIL;
+				command.command = FWFAIL;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			break;
-		case tagVPNCOMMAND::CHECKAV:
+		case CHECKAV:
 			if (CheckAntivirus() == 0) {
 				wsprintf(errMessage, L"Antivirus ok");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::AVOK;
+				command.command = AVOK;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			else {
 				wsprintf(errMessage, L"Antivirus fail");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::AVFAIL;
+				command.command = AVFAIL;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			break;
-		case tagVPNCOMMAND::CHECKUP:
+		case CHECKUP:
 			if (CheckUpdate() == 0) {
 				wsprintf(errMessage, L"Update ok");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::UPOK;
+				command.command = UPOK;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			else {
 				wsprintf(errMessage, L"Update fail");
 				ev.addLog(errMessage);
-				command.command = tagVPNCOMMAND::UPFAIL;
+				command.command = UPFAIL;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			}
 			break;
-		case tagVPNCOMMAND::CHANGEFW:
-			
+		case CHANGEFW:
+			ath.SaveRulesToFile(L"fwconfig.config");
+			break;
 		default:
 			wsprintf(errMessage, L"command.command: %i", command.command);
 			ev.addLog(errMessage);

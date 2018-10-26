@@ -135,8 +135,9 @@ void CathvpnuiDlg::OnBnClickedOk()
 	}
 
 	VPNCOMMAND command;
-	command.messsage = GetCurrentProcessId();
-	command.command = tagVPNCOMMAND::CHECKAV;
+	DWORD pid = GetCurrentProcessId();;
+	command.messsage = pid;
+	command.command = tagVPNCOMMAND::CHANGEFW;
 	DWORD dwByte;
 	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
 		int err = GetLastError();
@@ -145,6 +146,16 @@ void CathvpnuiDlg::OnBnClickedOk()
 		MessageBox(mess);
 	}
 	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+	CloseHandle(hPipe);
+	/*if (command.messsage == pid || command.command == AVOK) {
+		command.command = tagVPNCOMMAND::CHECKAV;
+		if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+			int err = GetLastError();
+			LPTSTR  mess = new WCHAR[50];
+			wsprintf(mess, L"err: %i", err);
+			MessageBox(mess);
+		}
+	}*/
 
 	//CDialogEx::OnOK();
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma comment(lib, "advapi32.lib")
+
 #include <Windows.h>
 #include <vector>
 #include <psapi.h>
@@ -7,6 +9,7 @@
 #include "wscapi.h"
 #include "VPMCOMMAND.h"
 #include "ATHFWSetup.h"
+#include <aclapi.h>
 
 class ATHService;
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
