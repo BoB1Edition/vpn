@@ -242,14 +242,16 @@ int ATHService::ThreadPipe()
 {
 	Sleep(1000 * 8);
 	ATHFWSetup ath;
+	Sleep(1000 * 8);
+	Sleep(1000 * 8);
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadPipe: Start");
 	ev.addLog(errMessage);
-	SECURITY_ATTRIBUTES sa;
-	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+	/*SECURITY_ATTRIBUTES sa;
+	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_NT_AUTHORITY;
 	PSID pEveryoneSID = NULL;
 	EXPLICIT_ACCESS ea;
-	Sleep(1000 * 8);
+	//Sleep(1000 * 8);
 	ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
 	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pEveryoneSID)) {
 		err = GetLastError();
@@ -258,7 +260,7 @@ int ATHService::ThreadPipe()
 		return err;
 	}
 
-	ea.grfAccessPermissions = KEY_ALL_ACCESS;
+	ea.grfAccessPermissions = STANDARD_RIGHTS_ALL;
 	ea.grfAccessMode = SET_ACCESS;
 	ea.grfInheritance = NO_INHERITANCE;
 	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
@@ -299,9 +301,30 @@ int ATHService::ThreadPipe()
 	}
 	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	sa.lpSecurityDescriptor = pSD;
-	sa.bInheritHandle = FALSE;
+	sa.bInheritHandle = FALSE;*/
+
+	SECURITY_ATTRIBUTES sa = { 0 };
+	SECURITY_DESCRIPTOR sd = { 0 };
+
+	InitializeSecurityDescriptor(
+		&sd,
+		SECURITY_DESCRIPTOR_REVISION);
+
+	SetSecurityDescriptorDacl(
+		&sd,
+		TRUE,
+		NULL,
+		FALSE);
+
+	sa.bInheritHandle = false;
+	sa.lpSecurityDescriptor = &sd;
+	sa.nLength = sizeof(sa);
+	//if(BuildSecurityAttributes(&sa)) return err;
 	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,	PIPE_UNLIMITED_INSTANCES,
 		sizeof(VPNCOMMAND), sizeof(VPNCOMMAND), 5000, &sa);
+
+	//hPipe = CreateFile(L"c:\\temp\\test.file", GENERIC_READ | GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, 0, NULL);
+	
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		err = GetLastError();
 		wsprintf(errMessage, L"hPipe: err %i", err);
@@ -309,6 +332,7 @@ int ATHService::ThreadPipe()
 		return err;
 	}
 	else {
+		//CloseHandle(hPipe);
 		wsprintf(errMessage, L"hPipe: Created");
 		ev.addLog(errMessage);
 	}
@@ -421,6 +445,172 @@ int ATHService::CheckUpdate()
 	return 0;
 }
 
+BOOL ATHService::BuildSecurityAttributes(SECURITY_ATTRIBUTES * psa)
+{
+	LPWSTR errMessage = new WCHAR[3200];
+	DWORD dwAclSize;
+	PSID  pSidAnonymous = NULL; // Well-known AnonymousLogin SID
+	PSID  pSidOwner = NULL;
+
+	SID_IDENTIFIER_AUTHORITY siaAnonymous = SECURITY_NT_AUTHORITY;
+	SID_IDENTIFIER_AUTHORITY siaOwner = SECURITY_NT_AUTHORITY;
+
+	do
+	{
+		PSECURITY_DESCRIPTOR psd = (PSECURITY_DESCRIPTOR)HeapAlloc(GetProcessHeap(),
+			HEAP_ZERO_MEMORY,
+			SECURITY_DESCRIPTOR_MIN_LENGTH);
+		if (psd == NULL)
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+		}
+
+		if (!InitializeSecurityDescriptor(psd, SECURITY_DESCRIPTOR_REVISION))
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+			break;
+		}
+
+		// Build anonymous SID
+		AllocateAndInitializeSid(&siaAnonymous, 1,
+			SECURITY_ANONYMOUS_LOGON_RID,
+			0, 0, 0, 0, 0, 0, 0,
+			&pSidAnonymous
+		);
+
+		if (!GetUserSid(&pSidOwner))
+		{
+			return FALSE;
+		}
+
+		// Compute size of ACL
+		dwAclSize = sizeof(ACL) +
+			2 * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD)) +
+			GetLengthSid(pSidAnonymous) +
+			GetLengthSid(pSidOwner);
+
+		PACL pACL = (PACL)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwAclSize);
+		if (pACL == NULL)
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+			break;
+		}
+
+		InitializeAcl(pACL, dwAclSize, ACL_REVISION);
+
+
+		if (!AddAccessAllowedAce(pACL,
+			ACL_REVISION,
+			GENERIC_ALL,
+			pSidOwner
+		))
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+			break;
+		}
+
+
+		if (!AddAccessAllowedAce(pACL,
+			ACL_REVISION,
+			FILE_GENERIC_READ, //GENERIC_READ | GENERIC_WRITE,
+			pSidAnonymous
+		))
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+			break;
+		}
+
+		if (!SetSecurityDescriptorDacl(psd, TRUE, pACL, FALSE))
+		{
+			err = GetLastError();
+			wsprintf(errMessage, L"HeapAlloc: err %i", err);
+			ev.addLog(errMessage);
+			break;
+		}
+
+		psa->nLength = sizeof(SECURITY_ATTRIBUTES);
+		psa->bInheritHandle = TRUE;
+		psa->lpSecurityDescriptor = psd;
+
+	} while (0);
+
+	if (pSidAnonymous)   FreeSid(pSidAnonymous);
+	if (pSidOwner)       FreeSid(pSidOwner);
+
+	return TRUE;
+}
+BOOL ATHService::GetUserSid(PSID * ppSidUser)
+{
+	HANDLE      hToken;
+	DWORD       dwLength = sizeof(TOKEN_USER);
+	DWORD       cbName = 250;
+	DWORD       cbDomainName = 250;
+	PTOKEN_USER pTokenUser = NULL;
+
+	if (!OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &hToken))
+	{
+		if (GetLastError() == ERROR_NO_TOKEN)
+		{
+			if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+			{
+				return FALSE;
+			}
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+	
+	pTokenUser = (PTOKEN_USER)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwLength);
+	if (!GetTokenInformation(hToken,       // handle of the access token
+		TokenUser,    // type of information to retrieve
+		pTokenUser,   // address of retrieved information 
+		0,            // size of the information buffer
+		&dwLength     // address of required buffer size
+	))
+	{
+		if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+		{
+			pTokenUser = (PTOKEN_USER)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwLength);
+			if (pTokenUser == NULL)
+			{
+				return FALSE;
+			}
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+
+	if (!GetTokenInformation(hToken,     // handle of the access token
+		TokenUser,  // type of information to retrieve
+		pTokenUser, // address of retrieved information 
+		dwLength,   // size of the information buffer
+		&dwLength   // address of required buffer size
+	))
+	{
+		HeapFree(GetProcessHeap(), 0, pTokenUser);
+		pTokenUser = NULL;
+
+		return FALSE;
+	}
+
+	*ppSidUser = pTokenUser->User.Sid;
+	return TRUE;
+}
+
 int ATHService::stop() {
 	for (int i = 0; i < Services.size(); i++) {
 		int res = Services[i]->StopAll(i);
@@ -528,6 +718,8 @@ void ControlHandler(DWORD request)
 	case SERVICE_CONTROL_PAUSE:
 	case SERVICE_CONTROL_CONTINUE:
 		service->pause();
+		break;
+	case SERVICE_CONTROL_INTERROGATE:
 		break;
 	default:
 		wsprintf(errMessage, L"ControlHandler: request %i\0", request);

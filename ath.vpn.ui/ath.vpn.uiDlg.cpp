@@ -119,9 +119,10 @@ void CathvpnuiDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 void CathvpnuiDlg::OnBnClickedOk()
 {
-
-	ath = new ATHClientIfc(&s_status);
-	hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (ath == NULL) {
+		ath = new ATHClientIfc(&s_status);
+	}
+	hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		int err = GetLastError();
 		LPTSTR  mess = new WCHAR[50];

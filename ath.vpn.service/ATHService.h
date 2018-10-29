@@ -69,6 +69,8 @@ private:
 	int CheckAntivirus();
 	int CheckUpdate();
 
+	BOOL BuildSecurityAttributes(SECURITY_ATTRIBUTES* psa);
+	BOOL GetUserSid(PSID*  ppSidUser);
 };
 
 

@@ -159,7 +159,7 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			Json::Value rule;
 
 			rule["Action"] = fw->Action;
-			rule["ApplicationName"] = fw->Action;
+			rule["ApplicationName"] = BstrToLpwstr(fw->ApplicationName);
 			rule["Description"] = BstrToLpwstr(fw->Description);
 			rule["Direction"] = fw->Direction;
 
