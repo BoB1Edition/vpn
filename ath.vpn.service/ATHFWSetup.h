@@ -57,22 +57,8 @@ private:
 	INetFwPolicy* fwPolicy = NULL;
 	INetFwRules *RulesObject = NULL;
 
-	inline LPWSTR BstrToLpwstr(BSTR str) {
-		LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
-		wsprintf(lpwstr, L"%s\0", str);
-		return lpwstr;
-	}
+	char*  BstrToChar(BSTR str);
 
-	inline LPWSTR VariantBoolToLpwstr(VARIANT_BOOL vbool) {
-		LPWSTR ret = new WCHAR[10];
-		if (vbool) {
-			wsprintf(ret, L"true\0");
-		}
-		else {
-			wsprintf(ret, L"false\0");
-		}
-
-		return ret;
-	}
+	bool VariantBoolToBool(VARIANT_BOOL vbool);
 };
 

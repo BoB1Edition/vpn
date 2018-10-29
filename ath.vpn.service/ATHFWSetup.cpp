@@ -98,13 +98,13 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 	
 	Json::Value root;
 
-	root["domainProfileEnabled"] = VariantBoolToLpwstr(fwsettings.domainProfileEnabled);
-	root["privateProfileEnabled"] = VariantBoolToLpwstr(fwsettings.privateProfileEnabled);
-	root["publicProfileEnabled"] = VariantBoolToLpwstr(fwsettings.publicProfileEnabled);
+	root["domainProfileEnabled"] = VariantBoolToBool(fwsettings.domainProfileEnabled);
+	root["privateProfileEnabled"] = VariantBoolToBool(fwsettings.privateProfileEnabled);
+	root["publicProfileEnabled"] = VariantBoolToBool(fwsettings.publicProfileEnabled);
 	
-	root["domainBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.domainBlockAllInboundTraffic);
-	root["privateBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.privateBlockAllInboundTraffic);
-	root["publicBlockAllInboundTraffic"] = VariantBoolToLpwstr(fwsettings.publicBlockAllInboundTraffic);
+	root["domainBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.domainBlockAllInboundTraffic);
+	root["privateBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.privateBlockAllInboundTraffic);
+	root["publicBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.publicBlockAllInboundTraffic);
 
 	root["domainDefaultInboundAction"] = (int)fwsettings.domainDefaultInboundAction;
 	root["publicDefaultInboundAction"] = (int)fwsettings.publicDefaultInboundAction;
@@ -159,24 +159,27 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			Json::Value rule;
 
 			rule["Action"] = fw->Action;
-			rule["ApplicationName"] = BstrToLpwstr(fw->ApplicationName);
-			rule["Description"] = BstrToLpwstr(fw->Description);
+			//size_t charsConverted = 0;
+			//wIn = BstrToChar(fw->ApplicationName);
+			//wcstombs_s(&charsConverted, cOut, 3200, wIn, lstrlenW(BstrToChar(fw->ApplicationName)));
+			rule["ApplicationName"] = BstrToChar(fw->ApplicationName);
+			rule["Description"] = BstrToChar(fw->Description);
 			rule["Direction"] = fw->Direction;
 
-			rule["EdgeTraversal"] = VariantBoolToLpwstr(fw->EdgeTraversal);
-			rule["Enabled"] = VariantBoolToLpwstr(fw->Enabled);
-			rule["Grouping"] = BstrToLpwstr(fw->Grouping);
-			rule["IcmpTypesAndCodes"] = BstrToLpwstr(fw->IcmpTypesAndCodes);
-			rule["Interfaces"] = BstrToLpwstr(fw->Interfaces.bstrVal);
-			rule["InterfaceTypes"] = BstrToLpwstr(fw->InterfaceTypes);
-			rule["LocalAddresses"] = BstrToLpwstr(fw->LocalAddresses);
-			rule["LocalPorts"] = BstrToLpwstr(fw->LocalPorts);
-			rule["Name"] = BstrToLpwstr(fw->Name);
+			rule["EdgeTraversal"] = VariantBoolToBool(fw->EdgeTraversal);
+			rule["Enabled"] = VariantBoolToBool(fw->Enabled);
+			rule["Grouping"] = BstrToChar(fw->Grouping);
+			rule["IcmpTypesAndCodes"] = BstrToChar(fw->IcmpTypesAndCodes);
+			rule["Interfaces"] = BstrToChar(fw->Interfaces.bstrVal);
+			rule["InterfaceTypes"] = BstrToChar(fw->InterfaceTypes);
+			rule["LocalAddresses"] = BstrToChar(fw->LocalAddresses);
+			rule["LocalPorts"] = BstrToChar(fw->LocalPorts);
+			rule["Name"] = BstrToChar(fw->Name);
 			rule["Profiles"] = fw->Profiles;
 			rule["Protocol"] = fw->Protocol;
-			rule["RemoteAddresses"] = BstrToLpwstr(fw->RemoteAddresses);
-			rule["RemotePorts"] = BstrToLpwstr(fw->RemotePorts);
-			rule["ServiceName"] = BstrToLpwstr(fw->ServiceName);
+			rule["RemoteAddresses"] = BstrToChar(fw->RemoteAddresses);
+			rule["RemotePorts"] = BstrToChar(fw->RemotePorts);
+			rule["ServiceName"] = BstrToChar(fw->ServiceName);
 			root["Rules"].append(rule);
 			//pADs->Release();
 		}
@@ -194,4 +197,27 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 {
 	return 0;
+}
+
+char * ATHFWSetup::BstrToChar(BSTR str) {
+	LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
+	wsprintf(lpwstr, L"%s\0", str);
+	char *cOut = new char[SysStringLen(str) + 11];
+	WideCharToMultiByte(1251, WC_DEFAULTCHAR, lpwstr, -1, cOut, 0, NULL, NULL);
+	size_t charsConverted = 0;
+	
+	wcstombs_s(&charsConverted, cOut, SysStringLen(str) + 11, lpwstr, SysStringLen(str) + 10);
+	return cOut;
+}
+
+bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
+	bool ret;
+	if (vbool) {
+		ret = true;
+	}
+	else {
+		ret = false;
+	}
+
+	return ret;
 }
