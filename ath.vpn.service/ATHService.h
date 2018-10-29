@@ -7,7 +7,7 @@
 #include <psapi.h>
 #include "EventMessage.h"
 #include "wscapi.h"
-#include "VPMCOMMAND.h"
+#include "VPNCOMMAND.h"
 #include "ATHFWSetup.h"
 #include <aclapi.h>
 

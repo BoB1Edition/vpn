@@ -2,7 +2,7 @@
 
 
 #include "ClientIfc.h"
-#include "VPMCOMMAND.h"
+#include "VPNCOMMAND.h"
 
 class ATHClientIfc : protected ClientIfc
 {

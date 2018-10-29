@@ -240,6 +240,7 @@ int ATHService::ThreadAVScan()
 
 int ATHService::ThreadPipe()
 {
+	Sleep(1000 * 8);
 	ATHFWSetup ath;
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadPipe: Start");
@@ -248,10 +249,11 @@ int ATHService::ThreadPipe()
 	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
 	PSID pEveryoneSID = NULL;
 	EXPLICIT_ACCESS ea;
+	Sleep(1000 * 8);
 	ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
 	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pEveryoneSID)) {
 		err = GetLastError();
-		wsprintf(errMessage, L"hPipe: err %i", err);
+		wsprintf(errMessage, L"AllocateAndInitializeSid: err %i", err);
 		ev.addLog(errMessage);
 		return err;
 	}
@@ -262,16 +264,42 @@ int ATHService::ThreadPipe()
 	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
 	ea.Trustee.ptstrName = (LPTSTR)pEveryoneSID;
+	wsprintf(errMessage, L"Start ACL: err ");
+	ev.addLog(errMessage);
 	PSECURITY_DESCRIPTOR pSD = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
-	PACL pACL;
-	SetEntriesInAcl(1, &ea, NULL, &pACL);
-	InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION);
-	if (!SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE)) {
+	if (pSD == NULL) {
 		err = GetLastError();
-		wsprintf(errMessage, L"hPipe: err %i", err);
+		wsprintf(errMessage, L"LocalAlloc: err %i", err);
 		ev.addLog(errMessage);
 		return err;
 	}
+	PACL pACL;
+	err = SetEntriesInAcl(1, &ea, NULL, &pACL);
+	if ( err != ERROR_SUCCESS) {
+		//err = GetLastError();
+		wsprintf(errMessage, L"SetEntriesInAcl: err %i", err);
+		ev.addLog(errMessage);
+		//err = GetLastError();
+		wsprintf(errMessage, L"SetEntriesInAcl: err %i", err);
+		ev.addLog(errMessage);
+		return err;
+	}
+	if (InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION) == 0) {
+		err = GetLastError();
+		wsprintf(errMessage, L"InitializeSecurityDescriptor: err %i", err);
+		ev.addLog(errMessage);
+		return err;
+	}
+
+	if (!SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE)) {
+		err = GetLastError();
+		wsprintf(errMessage, L"SetSecurityDescriptorDacl: err %i", err);
+		ev.addLog(errMessage);
+		return err;
+	}
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = pSD;
+	sa.bInheritHandle = FALSE;
 	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,	PIPE_UNLIMITED_INSTANCES,
 		sizeof(VPNCOMMAND), sizeof(VPNCOMMAND), 5000, &sa);
 	if (hPipe == INVALID_HANDLE_VALUE) {
@@ -279,6 +307,10 @@ int ATHService::ThreadPipe()
 		wsprintf(errMessage, L"hPipe: err %i", err);
 		ev.addLog(errMessage);
 		return err;
+	}
+	else {
+		wsprintf(errMessage, L"hPipe: Created");
+		ev.addLog(errMessage);
 	}
 	if (!ConnectNamedPipe(hPipe, NULL)) {
 		err = GetLastError();
