@@ -68,13 +68,27 @@ int ATHFWSetup::DeleteAllRules()
 			pDisp->QueryInterface(IID_INetFwRule, (void**)&pADs);
 			pADs->get_Name(&bstr);
 			hr = RulesObject->Remove(bstr);
-			printf("Session name: %S\n", bstr);
+			//printf("Session name: %S\n", bstr);
 			SysFreeString(bstr);
 			pADs->Release();
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
 	}
+	hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_DOMAIN, VARIANT_TRUE);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_DOMAIN, VARIANT_TRUE);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_DOMAIN, NET_FW_ACTION_BLOCK);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_DOMAIN, NET_FW_ACTION_BLOCK);
+
+	hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_PUBLIC, VARIANT_TRUE);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_PUBLIC, VARIANT_TRUE);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_PUBLIC, NET_FW_ACTION_BLOCK);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_PUBLIC, NET_FW_ACTION_BLOCK);
+
+	hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_PRIVATE, VARIANT_TRUE);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_PRIVATE, VARIANT_TRUE);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_PRIVATE, NET_FW_ACTION_BLOCK);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_PRIVATE, NET_FW_ACTION_BLOCK);
 	return 0;
 }
 
@@ -90,18 +104,18 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 	hr = fwPolicy2->get_BlockAllInboundTraffic(NET_FW_PROFILE2_PUBLIC, &fwsettings.publicBlockAllInboundTraffic);
 	hr = fwPolicy2->get_DefaultInboundAction(NET_FW_PROFILE2_PUBLIC, &fwsettings.publicDefaultInboundAction);
 	hr = fwPolicy2->get_DefaultOutboundAction(NET_FW_PROFILE2_PUBLIC, &fwsettings.publicDefaultOutboundAction);
-	
+
 	hr = fwPolicy2->get_FirewallEnabled(NET_FW_PROFILE2_PRIVATE, &fwsettings.privateProfileEnabled);
 	hr = fwPolicy2->get_BlockAllInboundTraffic(NET_FW_PROFILE2_PRIVATE, &fwsettings.privateBlockAllInboundTraffic);
 	hr = fwPolicy2->get_DefaultInboundAction(NET_FW_PROFILE2_PRIVATE, &fwsettings.privateDefaultInboundAction);
 	hr = fwPolicy2->get_DefaultOutboundAction(NET_FW_PROFILE2_PRIVATE, &fwsettings.privateDefaultOutboundAction);
-	
+
 	Json::Value root;
 
 	root["domainProfileEnabled"] = VariantBoolToBool(fwsettings.domainProfileEnabled);
 	root["privateProfileEnabled"] = VariantBoolToBool(fwsettings.privateProfileEnabled);
 	root["publicProfileEnabled"] = VariantBoolToBool(fwsettings.publicProfileEnabled);
-	
+
 	root["domainBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.domainBlockAllInboundTraffic);
 	root["privateBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.privateBlockAllInboundTraffic);
 	root["publicBlockAllInboundTraffic"] = VariantBoolToBool(fwsettings.publicBlockAllInboundTraffic);
@@ -159,9 +173,6 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			Json::Value rule;
 
 			rule["Action"] = fw->Action;
-			//size_t charsConverted = 0;
-			//wIn = BstrToChar(fw->ApplicationName);
-			//wcstombs_s(&charsConverted, cOut, 3200, wIn, lstrlenW(BstrToChar(fw->ApplicationName)));
 			rule["ApplicationName"] = BstrToChar(fw->ApplicationName);
 			rule["Description"] = BstrToChar(fw->Description);
 			rule["Direction"] = fw->Direction;
@@ -181,7 +192,6 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			rule["RemotePorts"] = BstrToChar(fw->RemotePorts);
 			rule["ServiceName"] = BstrToChar(fw->ServiceName);
 			root["Rules"].append(rule);
-			//pADs->Release();
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
@@ -196,6 +206,54 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 
 int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 {
+	FWSettings fwsettings = { 0 };
+	std::ifstream fwsetting(fName);
+
+	Json::Value root;
+	fwsetting >> root;
+	fwsettings.domainProfileEnabled = BoolToVariantBool(root["domainProfileEnabled"].asBool());
+	fwsettings.privateProfileEnabled = BoolToVariantBool(root["privateProfileEnabled"].asBool());
+	fwsettings.publicProfileEnabled = BoolToVariantBool(root["publicProfileEnabled"].asBool());
+
+	fwsettings.domainBlockAllInboundTraffic = BoolToVariantBool(root["domainBlockAllInboundTraffic"].asBool());
+	fwsettings.privateBlockAllInboundTraffic = BoolToVariantBool(root["privateBlockAllInboundTraffic"].asBool());
+	fwsettings.publicBlockAllInboundTraffic = BoolToVariantBool(root["publicBlockAllInboundTraffic"].asBool());
+
+	fwsettings.domainDefaultInboundAction = (NET_FW_ACTION)root["domainDefaultInboundAction"].asInt();
+	fwsettings.publicDefaultInboundAction = (NET_FW_ACTION)root["publicDefaultInboundAction"].asInt();
+	fwsettings.privateDefaultInboundAction = (NET_FW_ACTION)root["privateDefaultInboundAction"].asInt();
+
+	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["domainDefaultOutboundAction"].asInt();
+	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["publicDefaultOutboundAction"].asInt();
+	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["privateDefaultOutboundAction"].asInt();
+
+	fwsettings.fwstructs.clear();
+
+	for (int i = 0; i < root["Rules"].size(); i++) {
+		Json::Value rule = root["Rules"][i];
+		FWStruct fw;
+		fw.Action = (NET_FW_ACTION)rule["Action"].asInt();
+		fw.ApplicationName = CharToBstr(rule["ApplicationName"].asCString());
+		fw.Description = CharToBstr(rule["Description"].asCString());
+		fw.Direction = (NET_FW_RULE_DIRECTION)rule["Direction"].asInt();
+
+		fw.EdgeTraversal = BoolToVariantBool(rule["EdgeTraversal"].asBool());
+		fw.Enabled = BoolToVariantBool(rule["Enabled"].asBool());
+		fw.Grouping = CharToBstr(rule["Grouping"].asCString());
+		fw.IcmpTypesAndCodes = CharToBstr(rule["IcmpTypesAndCodes"].asCString());
+		fw.Interfaces.bstrVal = CharToBstr(rule["Interfaces"].asCString());
+		fw.InterfaceTypes = CharToBstr(rule["InterfaceTypes"].asCString());
+		fw.LocalAddresses = CharToBstr(rule["LocalAddresses"].asCString());
+		fw.LocalPorts = CharToBstr(rule["LocalPorts"].asCString());
+		fw.Name = CharToBstr(rule["Name"].asCString());
+		fw.Profiles = rule["Profiles"].asInt();
+		fw.Protocol = rule["Protocol"].asInt();
+		fw.RemoteAddresses = CharToBstr(rule["RemoteAddresses"].asCString());
+		fw.RemotePorts = CharToBstr(rule["RemotePorts"].asCString());
+		fw.ServiceName = CharToBstr(rule["ServiceName"].asCString());
+		addPolicy(fw);
+	}
+
 	return 0;
 }
 
@@ -203,11 +261,18 @@ char * ATHFWSetup::BstrToChar(BSTR str) {
 	LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
 	wsprintf(lpwstr, L"%s\0", str);
 	char *cOut = new char[SysStringLen(str) + 11];
-	WideCharToMultiByte(1251, WC_DEFAULTCHAR, lpwstr, -1, cOut, 0, NULL, NULL);
-	size_t charsConverted = 0;
-	
-	wcstombs_s(&charsConverted, cOut, SysStringLen(str) + 11, lpwstr, SysStringLen(str) + 10);
+	int conv = WideCharToMultiByte(1251, WC_COMPOSITECHECK, lpwstr, -1, cOut, 0, NULL, NULL);
+	conv = WideCharToMultiByte(1251, WC_COMPOSITECHECK, lpwstr, -1, cOut, conv, NULL, NULL);
+	if (conv == 0) {
+		wsprintf(lpwstr, L"err: conv %i, err: %i", conv, GetLastError());
+		return (char*)lpwstr;
+	}
 	return cOut;
+}
+
+BSTR ATHFWSetup::CharToBstr(const char * str)
+{
+	return BSTR();
 }
 
 bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
@@ -220,4 +285,9 @@ bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
 	}
 
 	return ret;
+}
+
+VARIANT_BOOL ATHFWSetup::BoolToVariantBool(bool b)
+{
+	return VARIANT_BOOL();
 }

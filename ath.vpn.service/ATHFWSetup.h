@@ -47,18 +47,20 @@ public:
 	ATHFWSetup();
 	~ATHFWSetup();
 
-	int addPolicy(FWStruct &fw);
+	
 	int DeleteAllRules();
 	int SaveRulesToFile(LPCWSTR fName);
 	int LoadRulesFromFile(LPCWSTR fName);
 private:
+	int addPolicy(FWStruct &fw);
 	INetFwMgr* fwMgr = NULL;
 	INetFwPolicy2* fwPolicy2 = NULL;
 	INetFwPolicy* fwPolicy = NULL;
 	INetFwRules *RulesObject = NULL;
 
 	char*  BstrToChar(BSTR str);
-
+	BSTR CharToBstr(const char* str);
 	bool VariantBoolToBool(VARIANT_BOOL vbool);
+	VARIANT_BOOL BoolToVariantBool(bool b);
 };
 

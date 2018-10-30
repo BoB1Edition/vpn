@@ -40,7 +40,7 @@ int ATHService::install()
 {
 	for (int i = 0; i < Services.size(); i++) {
 		int res = Services[i]->InstallAll(i);
-		if( res != 0) return res;
+		if (res != 0) return res;
 	}
 	return 0;
 }
@@ -48,7 +48,7 @@ int ATHService::install()
 int ATHService::InstallAll(int Index)
 {
 	LPWSTR currName = new WCHAR[MAX_PATH];
-	
+
 	GetModuleFileNameEx(hCurr, NULL, currName, MAX_PATH);
 	int lenpath = lstrlenW(currName);
 	if (lenpath >= MAX_PATH - 1 - lstrlenW(L"\0")) {
@@ -57,8 +57,8 @@ int ATHService::InstallAll(int Index)
 	}
 
 	//LPWSTR fullpath = lstrcpynW(lstrcpynW(currdir, L"\0", lenpath + 1), currName, lenpath + 1);
-	
-	
+
+
 	LPWSTR servicePath = new WCHAR[MAX_PATH];
 	wsprintf(servicePath, L"\"%s\" run\0", currName);
 	wprintf(L"servicePath: %s\n", servicePath);
@@ -108,15 +108,8 @@ void ATHService::init(LPWSTR curServiceName)
 	SERVICE_TABLE_ENTRY ServiceTable;
 	ServiceTable.lpServiceName = curServiceName;
 	ServiceTable.lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
-	//Sleep(1000 * 10);
 	if (!StartServiceCtrlDispatcher(&ServiceTable)) {
 		err = GetLastError();
-		/*if (err = 1056) {
-			LPWSTR errMessage = new WCHAR[32000];
-			wsprintf(errMessage, L"init Success: %s\n", curServiceName);
-			delete errMessage;
-			return;
-		}*/
 		LPWSTR errMessage = new WCHAR[32000];
 		wsprintf(errMessage, L"curServiceName: %s init: %i\n", curServiceName, err);
 		ev.addLog(errMessage);
@@ -156,7 +149,7 @@ int ATHService::MainAll(DWORD dwArgc, LPTSTR * lpszArgv, int Index)
 	if (serviceStatus.dwCurrentState == SERVICE_RUNNING)
 	{
 		DWORD dwAvScan, dwPipe;
-	
+
 		hThAVScan = CreateThread(NULL, 0, ThreadAVStart, this, 0, &dwAvScan);
 		if (hThAVScan == NULL) {
 			err = GetLastError();
@@ -177,7 +170,7 @@ int ATHService::MainAll(DWORD dwArgc, LPTSTR * lpszArgv, int Index)
 		}
 		wsprintf(errMessage, L"hThPipe: %s start ok\n", curServiceName);
 		ev.addLog(errMessage);
-		
+
 	}
 	paused = false;
 	return 0;
@@ -188,8 +181,6 @@ int ATHService::ThreadAVScan()
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadAVScan: Start");
 	ev.addLog(errMessage);
-	//Sleep(9 * 1000);
-	
 	HANDLE hTimer = CreateWaitableTimer(NULL, TRUE, L"global_KAV_SCAN");
 	LARGE_INTEGER liDueTime;
 	while (true) {
@@ -240,68 +231,10 @@ int ATHService::ThreadAVScan()
 
 int ATHService::ThreadPipe()
 {
-	Sleep(1000 * 8);
 	ATHFWSetup ath;
-	Sleep(1000 * 8);
-	Sleep(1000 * 8);
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadPipe: Start");
 	ev.addLog(errMessage);
-	/*SECURITY_ATTRIBUTES sa;
-	SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_NT_AUTHORITY;
-	PSID pEveryoneSID = NULL;
-	EXPLICIT_ACCESS ea;
-	//Sleep(1000 * 8);
-	ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
-	if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pEveryoneSID)) {
-		err = GetLastError();
-		wsprintf(errMessage, L"AllocateAndInitializeSid: err %i", err);
-		ev.addLog(errMessage);
-		return err;
-	}
-
-	ea.grfAccessPermissions = STANDARD_RIGHTS_ALL;
-	ea.grfAccessMode = SET_ACCESS;
-	ea.grfInheritance = NO_INHERITANCE;
-	ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea.Trustee.ptstrName = (LPTSTR)pEveryoneSID;
-	wsprintf(errMessage, L"Start ACL: err ");
-	ev.addLog(errMessage);
-	PSECURITY_DESCRIPTOR pSD = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
-	if (pSD == NULL) {
-		err = GetLastError();
-		wsprintf(errMessage, L"LocalAlloc: err %i", err);
-		ev.addLog(errMessage);
-		return err;
-	}
-	PACL pACL;
-	err = SetEntriesInAcl(1, &ea, NULL, &pACL);
-	if ( err != ERROR_SUCCESS) {
-		//err = GetLastError();
-		wsprintf(errMessage, L"SetEntriesInAcl: err %i", err);
-		ev.addLog(errMessage);
-		//err = GetLastError();
-		wsprintf(errMessage, L"SetEntriesInAcl: err %i", err);
-		ev.addLog(errMessage);
-		return err;
-	}
-	if (InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION) == 0) {
-		err = GetLastError();
-		wsprintf(errMessage, L"InitializeSecurityDescriptor: err %i", err);
-		ev.addLog(errMessage);
-		return err;
-	}
-
-	if (!SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE)) {
-		err = GetLastError();
-		wsprintf(errMessage, L"SetSecurityDescriptorDacl: err %i", err);
-		ev.addLog(errMessage);
-		return err;
-	}
-	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-	sa.lpSecurityDescriptor = pSD;
-	sa.bInheritHandle = FALSE;*/
 
 	SECURITY_ATTRIBUTES sa = { 0 };
 	SECURITY_DESCRIPTOR sd = { 0 };
@@ -319,12 +252,9 @@ int ATHService::ThreadPipe()
 	sa.bInheritHandle = false;
 	sa.lpSecurityDescriptor = &sd;
 	sa.nLength = sizeof(sa);
-	//if(BuildSecurityAttributes(&sa)) return err;
-	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,	PIPE_UNLIMITED_INSTANCES,
+	hPipe = CreateNamedPipe(L"\\\\.\\pipe\\ath.vpn", PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,
 		sizeof(VPNCOMMAND), sizeof(VPNCOMMAND), 5000, &sa);
 
-	//hPipe = CreateFile(L"c:\\temp\\test.file", GENERIC_READ | GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, 0, NULL);
-	
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		err = GetLastError();
 		wsprintf(errMessage, L"hPipe: err %i", err);
@@ -332,7 +262,6 @@ int ATHService::ThreadPipe()
 		return err;
 	}
 	else {
-		//CloseHandle(hPipe);
 		wsprintf(errMessage, L"hPipe: Created");
 		ev.addLog(errMessage);
 	}
@@ -345,7 +274,6 @@ int ATHService::ThreadPipe()
 	while (true) {
 		DWORD  cbRead;
 		VPNCOMMAND command = {};
-		//if(WaitForSingleObject(hPipe, INFINITE) != )
 		if (!ReadFile(hPipe, (LPVOID)&command, sizeof(VPNCOMMAND), &cbRead, NULL)) {
 			err = GetLastError();
 			wsprintf(errMessage, L"Command %i, %i, err: %i", command.command, command.messsage, err);
@@ -406,6 +334,7 @@ int ATHService::ThreadPipe()
 			break;
 		case CHANGEFW:
 			ath.SaveRulesToFile(L"fwconfig.config");
+			ath.DeleteAllRules();
 			break;
 		default:
 			wsprintf(errMessage, L"command.command: %i", command.command);
@@ -421,7 +350,7 @@ int ATHService::ThreadPipe()
 int ATHService::CheckFirewall()
 {
 	WSC_SECURITY_PROVIDER_HEALTH secHealth;
-	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_ANTIVIRUS, &secHealth);
+	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_SERVICE, &secHealth);
 	if (result != S_OK) {
 		return 255;
 	}
@@ -432,16 +361,49 @@ int ATHService::CheckFirewall()
 	if (result != S_OK) {
 		return 255;
 	}
+	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
+		return 1;
+	}
 	return 0;
 }
 
 int ATHService::CheckAntivirus()
 {
+	WSC_SECURITY_PROVIDER_HEALTH secHealth;
+	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_SERVICE, &secHealth);
+	if (result != S_OK) {
+		return 255;
+	}
+	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
+		return 1;
+	}
+	result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_ANTIVIRUS, &secHealth);
+	if (result != S_OK) {
+		return 255;
+	}
+	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
+		return 1;
+	}
 	return 0;
 }
 
-int ATHService::CheckUpdate()
-{
+int ATHService::CheckUpdate() {
+
+	WSC_SECURITY_PROVIDER_HEALTH secHealth;
+	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_SERVICE, &secHealth);
+	if (result != S_OK) {
+		return 255;
+	}
+	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
+		return 1;
+	}
+	result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_AUTOUPDATE_SETTINGS, &secHealth);
+	if (result != S_OK) {
+		return 255;
+	}
+	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
+		return 1;
+	}
 	return 0;
 }
 
@@ -571,7 +533,7 @@ BOOL ATHService::GetUserSid(PSID * ppSidUser)
 			return FALSE;
 		}
 	}
-	
+
 	pTokenUser = (PTOKEN_USER)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwLength);
 	if (!GetTokenInformation(hToken,       // handle of the access token
 		TokenUser,    // type of information to retrieve
@@ -634,7 +596,6 @@ int ATHService::StopAll(int Index)
 	serviceStatus.dwWin32ExitCode = 0;
 	serviceStatus.dwCurrentState = SERVICE_STOPPED;
 	SetServiceStatus(serviceStatusHandle, &serviceStatus);
-	//Sleep(10 * 1000);
 	wsprintf(errMessage, L"StopAll%i: err: %i\0", Index, GetLastError());
 	ev.addLog(errMessage);
 	return 0;
@@ -652,7 +613,7 @@ int ATHService::pause()
 		SuspendThread(hThPipe);
 		serviceStatus.dwCurrentState = SERVICE_PAUSED;
 	}
-	
+
 	SetServiceStatus(serviceStatusHandle, &serviceStatus);
 	paused = !paused;
 	return 0;
@@ -685,9 +646,6 @@ int ATHService::init()
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR * lpszArgv)
 {
 	LPWSTR message = new WCHAR[32000];
-	//GetCurrentProcessId();
-	
-	//Sleep(1000 * 20);
 	service = new ATHService;
 	wsprintf(message, L"ServiceMain: pid %i\0", GetCurrentProcessId());
 	printf("start ATHServiceMain");
@@ -730,7 +688,7 @@ void ControlHandler(DWORD request)
 
 DWORD __stdcall ThreadAVStart(LPVOID lpParameter)
 {
-	ATHService* lp = (ATHService*)lpParameter; 
+	ATHService* lp = (ATHService*)lpParameter;
 	LPWSTR errMessage = new WCHAR[32000];
 	wsprintf(errMessage, L"ThreadAVStart: Start");
 	lp->ev.addLog(errMessage);
@@ -747,7 +705,6 @@ DWORD __stdcall ThreadPipeStart(LPVOID lpParameter)
 	wsprintf(errMessage, L"ThreadPipeStart: Start");
 	lp->ev.addLog(errMessage);
 	lp->ThreadPipe();
-	//Sleep(1000 + 5);
 	wsprintf(errMessage, L"ThreadPipeStart: Stop");
 	lp->ev.addLog(errMessage);
 	return 0;

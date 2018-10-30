@@ -34,6 +34,7 @@ void CathvpnuiDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LOGIN, ec_login);
 	DDX_Control(pDX, IDC_PASSWORD, ec_password);
 	DDX_Control(pDX, IDC_STATUS, s_status);
+	DDX_Control(pDX, IDOK, ButtonOk);
 }
 
 BEGIN_MESSAGE_MAP(CathvpnuiDlg, CDialogEx)
