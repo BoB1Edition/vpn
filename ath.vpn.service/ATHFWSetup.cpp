@@ -20,29 +20,110 @@ ATHFWSetup::~ATHFWSetup()
 {
 }
 
-int ATHFWSetup::addPolicy(FWStruct &fw)
-{
+int ATHFWSetup::addPolicy(FWStruct &fw) {
 	INetFwRule *rule;
+	
 	CoCreateInstance(__uuidof(NetFwRule), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&rule);
-	rule->put_Action(fw.Action);
-	rule->put_ApplicationName(fw.ApplicationName);
-	rule->put_Description(fw.Description);
-	rule->put_Direction(fw.Direction);
-	rule->put_EdgeTraversal(fw.EdgeTraversal);
-	rule->put_Enabled(fw.Enabled);
-	rule->put_Grouping(fw.Grouping);
-	rule->put_IcmpTypesAndCodes(fw.IcmpTypesAndCodes);
-	rule->put_Interfaces(fw.Interfaces);
-	rule->put_InterfaceTypes(fw.InterfaceTypes);
-	rule->put_LocalAddresses(fw.LocalAddresses);
-	rule->put_LocalPorts(fw.LocalPorts);
-	rule->put_Name(fw.Name);
-	rule->put_Profiles(fw.Profiles);
-	rule->put_Protocol(fw.Protocol);
-	rule->put_RemoteAddresses(fw.RemoteAddresses);
-	rule->put_RemotePorts(fw.RemotePorts);
-	rule->put_ServiceName(fw.ServiceName);
 	HRESULT hr;
+	hr = rule->put_Direction(fw.Direction);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_ApplicationName(fw.ApplicationName);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Action(fw.Action);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Protocol(fw.Protocol);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_LocalAddresses(fw.LocalAddresses);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_LocalPorts(fw.LocalPorts);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_RemoteAddresses(fw.RemoteAddresses);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_RemotePorts(fw.RemotePorts);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	if (lstrcmpW(L"", fw.IcmpTypesAndCodes)) {
+		hr = rule->put_IcmpTypesAndCodes(fw.IcmpTypesAndCodes);
+		if (FAILED(hr)) {
+			err = hr;
+			return err;
+		}
+	}
+	hr = rule->put_Action(fw.Action);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Description(fw.Description);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_EdgeTraversal(fw.EdgeTraversal);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Enabled(fw.Enabled);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Grouping(fw.Grouping);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	
+	hr = rule->put_InterfaceTypes(fw.InterfaceTypes);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Profiles(fw.Profiles);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Name(fw.Name);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_Profiles(fw.Profiles);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	hr = rule->put_ServiceName(fw.ServiceName);
+	if (FAILED(hr)) {
+		err = hr;
+		return err;
+	}
+	
 	hr = RulesObject->Add(rule);
 	return hr;
 }
@@ -251,7 +332,9 @@ int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 		fw.RemoteAddresses = CharToBstr(rule["RemoteAddresses"].asCString());
 		fw.RemotePorts = CharToBstr(rule["RemotePorts"].asCString());
 		fw.ServiceName = CharToBstr(rule["ServiceName"].asCString());
-		addPolicy(fw);
+		if (addPolicy(fw) != S_OK) {
+			MessageBox(NULL, L"ERROR", 0, 0);
+		}
 	}
 
 	return 0;
@@ -272,7 +355,12 @@ char * ATHFWSetup::BstrToChar(BSTR str) {
 
 BSTR ATHFWSetup::CharToBstr(const char * str)
 {
-	return BSTR();
+	bstr_t ret;
+	ret=str;
+	if (lstrcmp(L"", ret)) {
+		return NULL;
+	}
+	return ret.GetBSTR();
 }
 
 bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
@@ -289,5 +377,10 @@ bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
 
 VARIANT_BOOL ATHFWSetup::BoolToVariantBool(bool b)
 {
-	return VARIANT_BOOL();
+	if (b) {
+		return VARIANT_TRUE;
+	}
+	else {
+		return VARIANT_FALSE;
+	}
 }

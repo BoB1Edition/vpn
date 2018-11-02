@@ -3,6 +3,7 @@
 #include <json/json.h>
 #include <iostream>
 #include <fstream>
+#include <comdef.h>
 
 struct FWStruct {
 	NET_FW_ACTION				Action;
@@ -51,6 +52,7 @@ public:
 	int DeleteAllRules();
 	int SaveRulesToFile(LPCWSTR fName);
 	int LoadRulesFromFile(LPCWSTR fName);
+	int err;
 private:
 	int addPolicy(FWStruct &fw);
 	INetFwMgr* fwMgr = NULL;
