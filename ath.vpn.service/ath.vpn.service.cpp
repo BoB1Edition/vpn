@@ -8,8 +8,6 @@
 #include "EventMessage.h"
 
 int main(int argc, char *argv[]) {
-
-	//Sleep(10 *1000);
 	EventMessage ev;
 	LPWSTR message = new WCHAR[32000];
 	//GetCurrentProcessId();

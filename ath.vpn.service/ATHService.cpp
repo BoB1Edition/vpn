@@ -334,8 +334,9 @@ int ATHService::ThreadPipe()
 			break;
 		case CHANGEFW:
 			ath.SaveRulesToFile(L"fwconfig.config");
-			ath.DeleteAllRules();
-			ath.LoadRulesFromFile(L"fwconfig.config1");
+			// ath.DeleteAllRules();
+			//  ath.LoadRulesFromFile(L"fwconfig.config");
+			WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			break;
 		default:
 			wsprintf(errMessage, L"command.command: %i", command.command);

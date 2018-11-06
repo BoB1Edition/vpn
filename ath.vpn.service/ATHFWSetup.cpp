@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "ATHFWSetup.h"
+#include "base64.h"
 
 
 ATHFWSetup::ATHFWSetup()
@@ -21,7 +22,7 @@ ATHFWSetup::~ATHFWSetup()
 }
 
 int ATHFWSetup::addPolicy(FWStruct &fw) {
-	INetFwRule *rule;
+	INetFwRule *rule = NULL;
 	
 	CoCreateInstance(__uuidof(NetFwRule), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&rule);
 	HRESULT hr;
@@ -50,6 +51,7 @@ int ATHFWSetup::addPolicy(FWStruct &fw) {
 		err = hr;
 		return err;
 	}
+	if(fw.LocalPorts != NULL)
 	hr = rule->put_LocalPorts(fw.LocalPorts);
 	if (FAILED(hr)) {
 		err = hr;
@@ -60,12 +62,13 @@ int ATHFWSetup::addPolicy(FWStruct &fw) {
 		err = hr;
 		return err;
 	}
+	if (fw.LocalPorts != NULL)
 	hr = rule->put_RemotePorts(fw.RemotePorts);
 	if (FAILED(hr)) {
 		err = hr;
 		return err;
 	}
-	if (lstrcmpW(L"", fw.IcmpTypesAndCodes)) {
+	if (fw.IcmpTypesAndCodes != NULL) {
 		hr = rule->put_IcmpTypesAndCodes(fw.IcmpTypesAndCodes);
 		if (FAILED(hr)) {
 			err = hr;
@@ -97,23 +100,17 @@ int ATHFWSetup::addPolicy(FWStruct &fw) {
 		err = hr;
 		return err;
 	}
-	
 	hr = rule->put_InterfaceTypes(fw.InterfaceTypes);
 	if (FAILED(hr)) {
 		err = hr;
 		return err;
 	}
-	hr = rule->put_Profiles(fw.Profiles);
+	/*hr = rule->put_Profiles(fw.Profiles);
 	if (FAILED(hr)) {
 		err = hr;
 		return err;
-	}
+	}*/
 	hr = rule->put_Name(fw.Name);
-	if (FAILED(hr)) {
-		err = hr;
-		return err;
-	}
-	hr = rule->put_Profiles(fw.Profiles);
 	if (FAILED(hr)) {
 		err = hr;
 		return err;
@@ -148,10 +145,17 @@ int ATHFWSetup::DeleteAllRules()
 			pDisp = V_DISPATCH(&var);
 			pDisp->QueryInterface(IID_INetFwRule, (void**)&pADs);
 			pADs->get_Name(&bstr);
-			hr = RulesObject->Remove(bstr);
-			//printf("Session name: %S\n", bstr);
+			HRESULT hrror= RulesObject->Remove(bstr);
+			if (hrror != S_OK) {
+				int err = GetLastError();
+				int e = hrror;
+				continue;
+			}
 			SysFreeString(bstr);
 			pADs->Release();
+		}
+		else {
+			printf("lFetch: %i", lFetch);
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
@@ -245,6 +249,12 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			pADs->get_LocalPorts(&fw->LocalPorts);
 			pADs->get_Name(&fw->Name);
 			pADs->get_Profiles(&fw->Profiles);
+			/*if (fw->Profiles != 0) {
+				char * ctestProfiles = (char *)fw->Profiles;
+				wchar_t * wtestProfiles = (wchar_t *)fw->Profiles;
+
+				wprintf(L"wtestProfiles: %s", wtestProfiles);
+			}*/
 			pADs->get_Protocol(&fw->Protocol);
 			pADs->get_RemoteAddresses(&fw->RemoteAddresses);
 			pADs->get_RemotePorts(&fw->RemotePorts);
@@ -288,6 +298,8 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 {
 	FWSettings fwsettings = { 0 };
+	std::ofstream ferr(L"File.err");
+	std::ofstream fok(L"File.ok");
 	std::ifstream fwsetting(fName);
 
 	Json::Value root;
@@ -300,23 +312,39 @@ int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 	fwsettings.privateBlockAllInboundTraffic = BoolToVariantBool(root["privateBlockAllInboundTraffic"].asBool());
 	fwsettings.publicBlockAllInboundTraffic = BoolToVariantBool(root["publicBlockAllInboundTraffic"].asBool());
 
-	fwsettings.domainDefaultInboundAction = (NET_FW_ACTION)root["domainDefaultInboundAction"].asInt();
-	fwsettings.publicDefaultInboundAction = (NET_FW_ACTION)root["publicDefaultInboundAction"].asInt();
-	fwsettings.privateDefaultInboundAction = (NET_FW_ACTION)root["privateDefaultInboundAction"].asInt();
+	fwsettings.domainDefaultInboundAction = (NET_FW_ACTION)root["domainDefaultInboundAction"].asInt64();
+	fwsettings.publicDefaultInboundAction = (NET_FW_ACTION)root["publicDefaultInboundAction"].asInt64();
+	fwsettings.privateDefaultInboundAction = (NET_FW_ACTION)root["privateDefaultInboundAction"].asInt64();
 
-	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["domainDefaultOutboundAction"].asInt();
-	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["publicDefaultOutboundAction"].asInt();
-	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["privateDefaultOutboundAction"].asInt();
+	fwsettings.domainDefaultOutboundAction = (NET_FW_ACTION)root["domainDefaultOutboundAction"].asInt64();
+	fwsettings.publicDefaultOutboundAction = (NET_FW_ACTION)root["publicDefaultOutboundAction"].asInt64();
+	fwsettings.privateDefaultOutboundAction = (NET_FW_ACTION)root["privateDefaultOutboundAction"].asInt64();
+
+	HRESULT hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_DOMAIN, fwsettings.domainProfileEnabled);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_DOMAIN, fwsettings.domainBlockAllInboundTraffic);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_DOMAIN, fwsettings.domainDefaultInboundAction);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_DOMAIN, fwsettings.domainDefaultOutboundAction);
+
+	hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_PUBLIC, fwsettings.publicProfileEnabled);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_PUBLIC, fwsettings.publicBlockAllInboundTraffic);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_PUBLIC, fwsettings.publicDefaultInboundAction);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_PUBLIC, fwsettings.publicDefaultOutboundAction);
+
+	hr = fwPolicy2->put_FirewallEnabled(NET_FW_PROFILE2_PRIVATE, fwsettings.privateProfileEnabled);
+	hr = fwPolicy2->put_BlockAllInboundTraffic(NET_FW_PROFILE2_PRIVATE, fwsettings.privateBlockAllInboundTraffic);
+	hr = fwPolicy2->put_DefaultInboundAction(NET_FW_PROFILE2_PRIVATE, fwsettings.privateDefaultInboundAction);
+	hr = fwPolicy2->put_DefaultOutboundAction(NET_FW_PROFILE2_PRIVATE, fwsettings.privateDefaultOutboundAction);
+
 
 	fwsettings.fwstructs.clear();
 
-	for (int i = 0; i < root["Rules"].size(); i++) {
+	for (int unsigned i = 0; i < root["Rules"].size(); i++) {
 		Json::Value rule = root["Rules"][i];
-		FWStruct fw;
-		fw.Action = (NET_FW_ACTION)rule["Action"].asInt();
+		FWStruct fw = { };
+		fw.Action = (NET_FW_ACTION)rule["Action"].asInt64();
 		fw.ApplicationName = CharToBstr(rule["ApplicationName"].asCString());
 		fw.Description = CharToBstr(rule["Description"].asCString());
-		fw.Direction = (NET_FW_RULE_DIRECTION)rule["Direction"].asInt();
+		fw.Direction = (NET_FW_RULE_DIRECTION)rule["Direction"].asInt64();
 
 		fw.EdgeTraversal = BoolToVariantBool(rule["EdgeTraversal"].asBool());
 		fw.Enabled = BoolToVariantBool(rule["Enabled"].asBool());
@@ -332,15 +360,31 @@ int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 		fw.RemoteAddresses = CharToBstr(rule["RemoteAddresses"].asCString());
 		fw.RemotePorts = CharToBstr(rule["RemotePorts"].asCString());
 		fw.ServiceName = CharToBstr(rule["ServiceName"].asCString());
-		if (addPolicy(fw) != S_OK) {
-			MessageBox(NULL, L"ERROR", 0, 0);
+		if (FAILED(addPolicy(fw))) {
+			ferr << rule["ApplicationName"].asCString() << ":" << rule["Name"].asCString() << ":" << fw.Profiles << "\r\n";
+			ferr.flush();
+			
+		}
+		else {
+			fok << rule["ApplicationName"].asCString() << ":" << rule["Name"].asCString() << ":" << fw.Profiles << "\r\n";
+			fok.flush();
 		}
 	}
-
+	ferr.close();
+	fok.close();
+	fwsetting.close();
 	return 0;
 }
 
 char * ATHFWSetup::BstrToChar(BSTR str) {
+	_bstr_t origin = str;
+	_bstr_t end = L"\0";
+	_bstr_t finalstr = origin + end;
+	int lenght = SysStringByteLen(finalstr.GetBSTR());
+	std::string *name = new std::string(base64_encode((const unsigned char*)finalstr.GetBSTR(), lenght + 2));
+	char *ret = (char*)name->c_str();
+	return ret;
+	/*
 	LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
 	wsprintf(lpwstr, L"%s\0", str);
 	char *cOut = new char[SysStringLen(str) + 11];
@@ -351,16 +395,21 @@ char * ATHFWSetup::BstrToChar(BSTR str) {
 		return (char*)lpwstr;
 	}
 	return cOut;
+	*/
 }
 
 BSTR ATHFWSetup::CharToBstr(const char * str)
 {
-	bstr_t ret;
-	ret=str;
-	if (lstrcmp(L"", ret)) {
-		return NULL;
+	/*if (strcmp("", str) != 0) {
+		bstr_t * ret = new bstr_t(str);
+		return ret->GetBSTR();
 	}
-	return ret.GetBSTR();
+	return NULL;*/
+	std::string *tmp = new std::string(str);
+	*tmp = base64_decode(*tmp);
+	BSTR bstr = (BSTR)tmp->c_str();
+	if (wcscmp(bstr, L"") == 0) return NULL;
+	return bstr;
 }
 
 bool ATHFWSetup::VariantBoolToBool(VARIANT_BOOL vbool) {
