@@ -166,7 +166,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Shared\base64.h" />
-    <ClInclude Include="..\Shared\VPMCOMMAND.h" />
+    <ClInclude Include="..\Shared\VPNCOMMAND.h" />
     <ClInclude Include="ATHFWSetup.h" />
     <ClInclude Include="ATHService.h" />
     <ClInclude Include="EventMessage.h" />

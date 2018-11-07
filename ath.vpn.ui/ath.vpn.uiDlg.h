@@ -44,4 +44,5 @@ public:
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 	afx_msg void OnBnClickedOk();
 	CButton ButtonOk;
+	afx_msg void OnDestroy();
 };

@@ -44,13 +44,13 @@
     <ClInclude Include="Event_log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Shared\VPMCOMMAND.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ATHFWSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Shared\base64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Shared\VPNCOMMAND.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

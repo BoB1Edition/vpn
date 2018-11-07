@@ -43,6 +43,7 @@ BEGIN_MESSAGE_MAP(CathvpnuiDlg, CDialogEx)
 	ON_WM_CREATE()
 	ON_WM_SHOWWINDOW()
 	ON_BN_CLICKED(IDOK, &CathvpnuiDlg::OnBnClickedOk)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -57,7 +58,21 @@ BOOL CathvpnuiDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Крупный значок
 	SetIcon(m_hIcon, FALSE);		// Мелкий значок
 
-	ShowWindow(SW_MINIMIZE);
+	LPWSTR username = new WCHAR[300];
+	DWORD dw = 300;
+	GetUserName(username, &dw);
+
+	if (StrCmpIW(L"azhokhov", username) == 0 || StrCmpIW(L"athuser", username) == 0) {
+		ath = new ATHClientIfc(&s_status);
+		hPipe = NULL;
+	}
+	else {
+		LPWSTR message = new WCHAR[3000];
+		wsprintf(message, L"User: %s cannot use this program\0", username);
+		MessageBox(message);
+		return FALSE;
+	}
+	//ShowWindow(SW_MINIMIZE);
 
 	// TODO: добавьте дополнительную инициализацию
 
@@ -120,14 +135,12 @@ void CathvpnuiDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 void CathvpnuiDlg::OnBnClickedOk()
 {
-	if (ath == NULL) {
-		ath = new ATHClientIfc(&s_status);
-	}
-	hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	if(hPipe == NULL)
+		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		int err = GetLastError();
-		LPTSTR  mess = new WCHAR[50];
-		wsprintf(mess, L"err: %i", err);
+		LPTSTR  mess = new WCHAR[200];
+		wsprintf(mess, L"Незапущенна служба ath.vpn.service0: %i", err);
 		MessageBox(mess);
 		return;
 	}
@@ -137,27 +150,88 @@ void CathvpnuiDlg::OnBnClickedOk()
 	}
 
 	VPNCOMMAND command;
-	DWORD pid = GetCurrentProcessId();;
+	DWORD pid = GetCurrentProcessId();
 	command.messsage = pid;
-	command.command = tagVPNCOMMAND::CHANGEFW;
+	command.command = CHECKAV;
 	DWORD dwByte;
 	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
 		int err = GetLastError();
 		LPTSTR  mess = new WCHAR[50];
 		wsprintf(mess, L"err: %i", err);
 		MessageBox(mess);
+		return;
 	}
 	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
-	CloseHandle(hPipe);
-	/*if (command.messsage == pid || command.command == AVOK) {
-		command.command = tagVPNCOMMAND::CHECKAV;
+	if (command.command != AVOK) {
+		LPTSTR  mess = new WCHAR[250];
+		wsprintf(mess, L"У Вас проблема с антивирусом, включите его");
+		MessageBox(mess);
+		return;
+	}
+	command.messsage = pid;
+	command.command = CHECKFW;
+	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+		int err = GetLastError();
+		LPTSTR  mess = new WCHAR[50];
+		wsprintf(mess, L"err: %i", err);
+		MessageBox(mess);
+		return;
+	}
+	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+	if (command.command != FWOK) {
+		command.messsage = pid;
+		command.command = CHANGEFW;
 		if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
 			int err = GetLastError();
 			LPTSTR  mess = new WCHAR[50];
 			wsprintf(mess, L"err: %i", err);
 			MessageBox(mess);
+			return;
 		}
-	}*/
+		ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+	}
+	command.messsage = pid;
+	command.command = CHANGEFW;
+	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+		int err = GetLastError();
+		LPTSTR  mess = new WCHAR[50];
+		wsprintf(mess, L"err: %i", err);
+		MessageBox(mess);
+		return;
+	}
+	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+	if (command.command != CHANGEFW) {
+		LPTSTR  mess = new WCHAR[250];
+		wsprintf(mess, L"У Вас проблема с фаерволом, включите его");
+		MessageBox(mess);
+		return;
+	}
+	ath->GetStatus();
+	int ul = ec_login.GetWindowTextLengthW() + 1;
+	int pl = ec_password.GetWindowTextLengthW() + 1;
+	LPTSTR u = new WCHAR[ul];
+	LPTSTR p = new WCHAR[pl];
+	ec_login.GetWindowTextW(u, ul);
+	ec_password.GetWindowTextW(p, pl);
+	if (ath->connect(L"gate1.ath.ru", u, p) && ath->ConnectRDP()) {
+		ShowWindow(SW_MINIMIZE);
+		ButtonOk.SetWindowTextW(L"Disconnect");
+	}
+	delete u, p;
+}
 
-	//CDialogEx::OnOK();
+
+void CathvpnuiDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+	ath->deleteCred();
+	delete ath;
+	if (hPipe == NULL)
+		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	VPNCOMMAND command;
+	DWORD pid = GetCurrentProcessId();
+	command.messsage = pid;
+	command.command = RESTOREFW;
+	DWORD dwByte = 0;
+	WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
 }

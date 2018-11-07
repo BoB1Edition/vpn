@@ -3,6 +3,7 @@
 
 #include "ClientIfc.h"
 #include "VPNCOMMAND.h"
+#include "wincred.h"
 
 class ATHClientIfc : protected ClientIfc
 {
@@ -11,9 +12,13 @@ public:
 	~ATHClientIfc();
 
 	int GetStatus();
-	void inline SetCallbackStatus(CStatic *s_status) {
+	void SetCallbackStatus(CStatic *s_status) {
 		this->s_status = s_status;
 	}
+	bool connect(std::wstring, wchar_t * username, wchar_t * password);
+
+	bool ConnectRDP();
+	void deleteCred();
 protected:
 
 	CStatic *s_status;
@@ -28,5 +33,7 @@ protected:
 	virtual void CertWarningCB(const tstring & rtstrUntrustedServer, const std::list<tstring>& rltstrCertErrors, bool bAllowImport) override;
 private:
 	bool Attach;
+	wchar_t * username;
+	wchar_t * password;
 };
 
