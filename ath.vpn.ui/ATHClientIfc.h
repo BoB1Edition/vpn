@@ -5,7 +5,7 @@
 #include "VPNCOMMAND.h"
 #include "wincred.h"
 
-class ATHClientIfc : protected ClientIfc
+class ATHClientIfc : public ClientIfc
 {
 public:
 	ATHClientIfc(CStatic *s_status);

@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 	//wprintf(L"servicePath: %s\n", servicePath);
 	ev.addLog(message);
 	ATHService service;
-
+	//service.GetDWORDRegKey();
 	if (argc == 2) {
 		if (_strcmpi("run", argv[1]) == 0) {
 			wsprintf(message, L"run start: pid %i\0", GetCurrentProcessId());

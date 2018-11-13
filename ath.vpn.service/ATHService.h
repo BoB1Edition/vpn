@@ -1,6 +1,7 @@
 #pragma once
 
 #pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "Netapi32.lib")
 
 #include <Windows.h>
 #include <vector>
@@ -10,6 +11,10 @@
 #include "VPNCOMMAND.h"
 #include "ATHFWSetup.h"
 #include <aclapi.h>
+#include <lmaccess.h>
+#include <time.h>
+#include <Winnt.h>
+#include "curl/curl.h"
 
 class ATHService;
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
@@ -71,6 +76,16 @@ private:
 
 	BOOL BuildSecurityAttributes(SECURITY_ATTRIBUTES* psa);
 	BOOL GetUserSid(PSID*  ppSidUser);
+
+	LPWSTR GeneratePassword();
+
+	const std::wstring chars = L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%^&$+-_!@#%?";
+
+public:
+	void SendJson();
+
+	LONG GetDWORDRegKey(DWORD *nValue);
+
 };
 
 

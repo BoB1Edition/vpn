@@ -140,6 +140,7 @@ int ATHFWSetup::DeleteAllRules()
 	hr = pEnum->Next(1, &var, &lFetch);
 	while (hr == S_OK)
 	{
+
 		if (lFetch == 1)
 		{
 			pDisp = V_DISPATCH(&var);
@@ -149,13 +150,14 @@ int ATHFWSetup::DeleteAllRules()
 			if (hrror != S_OK) {
 				int err = GetLastError();
 				int e = hrror;
+				hr = pEnum->Next(1, &var, &lFetch);
 				continue;
 			}
 			SysFreeString(bstr);
 			pADs->Release();
 		}
 		else {
-			printf("lFetch: %i", lFetch);
+			//printf("lFetch: %i", lFetch);
 		}
 		VariantClear(&var);
 		hr = pEnum->Next(1, &var, &lFetch);
@@ -179,6 +181,12 @@ int ATHFWSetup::DeleteAllRules()
 
 int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 {
+	std::ofstream fwsetting(fName);
+	fwsetting.flush();
+	fwsetting.close();
+	fwsetting.open(fName);
+	if(!fwsetting.is_open())
+		return -1;
 	FWSettings fwsettings = {};
 	HRESULT hr = fwPolicy2->get_FirewallEnabled(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainProfileEnabled);
 	hr = fwPolicy2->get_BlockAllInboundTraffic(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainBlockAllInboundTraffic);
@@ -288,7 +296,7 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 		hr = pEnum->Next(1, &var, &lFetch);
 	}
 	Json::StyledStreamWriter writer;
-	std::ofstream fwsetting(fName);
+	
 	writer.write(fwsetting, root);
 	fwsetting.flush();
 	fwsetting.close();

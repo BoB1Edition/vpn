@@ -70,6 +70,7 @@ BOOL CathvpnuiDlg::OnInitDialog()
 		LPWSTR message = new WCHAR[3000];
 		wsprintf(message, L"User: %s cannot use this program\0", username);
 		MessageBox(message);
+		ExitProcess(500);
 		return FALSE;
 	}
 	//ShowWindow(SW_MINIMIZE);
@@ -121,7 +122,7 @@ int CathvpnuiDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDialogEx::OnCreate(lpCreateStruct) == -1)
 		return -1;
-
+	hPipe = NULL;
 	return 0;
 }
 
@@ -225,8 +226,7 @@ void CathvpnuiDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 	ath->deleteCred();
-	delete ath;
-	if (hPipe == NULL)
+	if (hPipe == NULL && ath->isConnected())
 		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	VPNCOMMAND command;
 	DWORD pid = GetCurrentProcessId();
@@ -234,4 +234,5 @@ void CathvpnuiDlg::OnDestroy()
 	command.command = RESTOREFW;
 	DWORD dwByte = 0;
 	WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
+	delete ath;
 }

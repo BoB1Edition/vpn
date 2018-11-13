@@ -105,14 +105,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Shared;$(SOLUTION_DIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Shared;$(SOLUTION_DIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\include;$(SOLUTION_DIR)packages\curl-vc140-static-32_64.7.53.0\lib\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>jsoncpp.lib;Wscapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SOLUTION_DIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\libs\x64\static\Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcurl.lib;jsoncpp.lib;Wscapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SOLUTION_DIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\libs\x64\static\Debug;$(SOLUTION_DIR)packages\curl-vc140-static-32_64.7.53.0\lib\native\libs\x64\static\debug</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <UpdateFileHashes>true</UpdateFileHashes>
@@ -179,11 +179,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\jsoncpp-vc140-static-64.1.8.0\build\native\jsoncpp-vc140-static-64.targets" Condition="Exists('..\packages\jsoncpp-vc140-static-64.1.8.0\build\native\jsoncpp-vc140-static-64.targets')" />
+    <Import Project="..\packages\curl-vc140-static-32_64.7.53.0\build\native\curl-vc140-static-32_64.targets" Condition="Exists('..\packages\curl-vc140-static-32_64.7.53.0\build\native\curl-vc140-static-32_64.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>Данный проект ссылается на пакеты NuGet, отсутствующие на этом компьютере. Используйте восстановление пакетов NuGet, чтобы скачать их.  Дополнительную информацию см. по адресу: http://go.microsoft.com/fwlink/?LinkID=322105. Отсутствует следующий файл: {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\jsoncpp-vc140-static-64.1.8.0\build\native\jsoncpp-vc140-static-64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\jsoncpp-vc140-static-64.1.8.0\build\native\jsoncpp-vc140-static-64.targets'))" />
+    <Error Condition="!Exists('..\packages\curl-vc140-static-32_64.7.53.0\build\native\curl-vc140-static-32_64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\curl-vc140-static-32_64.7.53.0\build\native\curl-vc140-static-32_64.targets'))" />
   </Target>
 </Project>
