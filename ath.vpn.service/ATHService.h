@@ -21,7 +21,7 @@ VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
 void ControlHandler(DWORD request);
 DWORD WINAPI ThreadAVStart(LPVOID lpParameter);
 DWORD WINAPI ThreadPipeStart(LPVOID lpParameter);
-
+static size_t read_callback(void *dest, size_t size, size_t nmemb, void *userp);
 
 class ATHService
 {
