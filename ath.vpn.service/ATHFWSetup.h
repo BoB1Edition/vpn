@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <comdef.h>
+#include "EventMessage.h"
 
 struct FWStruct {
 	NET_FW_ACTION				Action;
@@ -59,7 +60,7 @@ private:
 	INetFwPolicy2* fwPolicy2 = NULL;
 	INetFwPolicy* fwPolicy = NULL;
 	INetFwRules *RulesObject = NULL;
-
+	EventMessage ev;
 	char*  BstrToChar(BSTR str);
 	BSTR CharToBstr(const char* str);
 	bool VariantBoolToBool(VARIANT_BOOL vbool);

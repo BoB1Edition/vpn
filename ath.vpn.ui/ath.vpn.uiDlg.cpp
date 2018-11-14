@@ -216,7 +216,11 @@ void CathvpnuiDlg::OnBnClickedOk()
 	ec_password.GetWindowTextW(p, pl);
 	if (ath->connect(L"gate1.ath.ru", u, p) && ath->ConnectRDP()) {
 		ShowWindow(SW_MINIMIZE);
-		ButtonOk.SetWindowTextW(L"Disconnect");
+		//ButtonOk.SetWindowTextW(L"Disconnect");
+	}
+	else {
+		unsigned int i = GetLastError();
+		//MessageBox(L"Not connected", 0, i);
 	}
 	delete u, p;
 }

@@ -18,7 +18,7 @@ ATHClientIfc::~ATHClientIfc()
 int ATHClientIfc::GetStatus()
 {
 	if(!Attach)
-		Attach = ClientIfc::attach(false, false, true, true);
+		Attach = ClientIfc::attach(false, true, true, true);
 	if (!Attach)
 		return -1;
 	if(ClientIfc::isConnected())
@@ -34,8 +34,12 @@ bool ATHClientIfc::connect(std::wstring host, wchar_t * username, wchar_t * pass
 	this->password = password;
 	if (ClientIfc::isConnected())
 		return true;
-	if(ClientIfc::connect(host))
+	//setBanner(L"Banner");
+	setBannerResponse(true);
+	
+	if (ClientIfc::connect(host)) {
 		return true;
+	}
 	return false;
 }
 
@@ -92,16 +96,20 @@ void ATHClientIfc::StateCB(const VPNState state, const VPNSubState subState, con
 
 void ATHClientIfc::BannerCB(const tstring & banner)
 {
+	setBannerResponse(true);
 	s_status->SetWindowTextW(banner.c_str());
 }
 
 void ATHClientIfc::NoticeCB(const tstring notice, const MessageType type)
 {
 	s_status->SetWindowTextW(notice.c_str());
+	//ClientIfc::setBannerResponse(true);
 }
 
 void ATHClientIfc::ServiceReadyCB()
 {
+	s_status->SetWindowTextW(L"ServiceReadyCB");
+	setBanner(L"ServiceReadyCB");
 }
 
 void ATHClientIfc::UserPromptCB(ConnectPromptInfo & ConnectPrompt)
@@ -117,6 +125,7 @@ void ATHClientIfc::UserPromptCB(ConnectPromptInfo & ConnectPrompt)
 		tstring promptName = *name_iter;
 		PromptEntry *entry = ConnectPrompt.getPromptEntry(promptName);
 		tstring entryName = entry->getPromptName();
+		PromptType pt = entry->getPromptType();
 		if (entryName == PromptEntry::Username)
 		{
 			std::wstring uname(username);
@@ -134,6 +143,8 @@ void ATHClientIfc::UserPromptCB(ConnectPromptInfo & ConnectPrompt)
 
 void ATHClientIfc::CertBlockedCB(const tstring & rtstrUntrustedServer)
 {
+	setCertBlockedResponse(true);
+	s_status->SetWindowTextW(L"CertBlockedCB");
 }
 
 void ATHClientIfc::CertWarningCB(const tstring & rtstrUntrustedServer, const std::list<tstring>& rltstrCertErrors, bool bAllowImport)

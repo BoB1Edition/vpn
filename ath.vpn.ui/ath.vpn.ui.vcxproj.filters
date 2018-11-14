@@ -36,6 +36,9 @@
     <ClInclude Include="ATHClientIfc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LogCStatic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ath.vpn.ui.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ATHClientIfc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogCStatic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

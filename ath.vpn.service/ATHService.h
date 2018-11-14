@@ -14,7 +14,7 @@
 #include <lmaccess.h>
 #include <time.h>
 #include <Winnt.h>
-#include "curl/curl.h"
+#include "ntsecapi.h"
 
 class ATHService;
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
@@ -82,8 +82,8 @@ private:
 	const std::wstring chars = L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%^&$+-_!@#%?";
 
 public:
-	void SendJson();
-
+	//void SendJson();
+	bool ATHService::InitLsaString(PLSA_UNICODE_STRING pLsaString, LPCWSTR pwszString);
 	LONG GetDWORDRegKey(DWORD *nValue);
 
 };

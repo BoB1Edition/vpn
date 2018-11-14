@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ATHClientIfc.h"
+#include "LogCStatic.h"
 
 // диалоговое окно CathvpnuiDlg
 class CathvpnuiDlg : public CDialogEx
@@ -39,7 +40,7 @@ private:
 public:
 	CEdit ec_login;
 	CEdit ec_password;
-	CStatic s_status;
+	LogCStatic s_status;
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 	afx_msg void OnBnClickedOk();

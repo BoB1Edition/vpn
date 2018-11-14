@@ -3,6 +3,7 @@
 #include "base64.h"
 
 
+
 ATHFWSetup::ATHFWSetup()
 {
 	HRESULT hr = S_OK;
@@ -150,7 +151,11 @@ int ATHFWSetup::DeleteAllRules()
 			if (hrror != S_OK) {
 				int err = GetLastError();
 				int e = hrror;
+				LPWSTR errMessage = new WCHAR[32000];
+				wsprintf(errMessage, L"Rules: %s, not deleted: %i, %i\n", bstr, err, hrror);
+				ev.addLog(errMessage);
 				hr = pEnum->Next(1, &var, &lFetch);
+
 				continue;
 			}
 			SysFreeString(bstr);
