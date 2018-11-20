@@ -51,6 +51,17 @@ END_MESSAGE_MAP()
 
 BOOL CathvpnuiDlg::OnInitDialog()
 {
+	ProgressBar = new ATHProgressBar();
+	ProgressBar->Create(IDD_ATHDIALOGBAR, ProgressBar);
+	//ProgressBar->DoModal();
+	//ProgressBar->ShowWindow(SW_SHOW);
+	if (ProgressBar->DoModal() < 0) {
+		int i = GetLastError();
+		//IErrorInfo *ei;
+		//GetErrorInfo(0, &ei);
+	}
+
+
 	CDialogEx::OnInitDialog();
 
 	// Задает значок для этого диалогового окна.  Среда делает это автоматически,

@@ -53,7 +53,7 @@ BOOL CathvpnuiApp::InitInstance()
 	// Измените раздел реестра, в котором хранятся параметры
 	// TODO: следует изменить эту строку на что-нибудь подходящее,
 	// например на название организации
-	SetRegistryKey(_T("Локальные приложения, созданные с помощью мастера приложений"));
+	SetRegistryKey(_T("BoB_Edition for ATH"));
 
 	CathvpnuiDlg dlg;
 	m_pMainWnd = &dlg;

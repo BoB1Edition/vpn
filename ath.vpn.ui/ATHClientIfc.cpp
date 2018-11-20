@@ -45,6 +45,7 @@ bool ATHClientIfc::connect(std::wstring host, wchar_t * username, wchar_t * pass
 
 bool ATHClientIfc::ConnectRDP()
 {
+	Sleep(1000 * 5);
 	CREDENTIAL *cred = (CREDENTIAL *) calloc(2, sizeof(CREDENTIAL));
 	cred->Flags = 0;
 	cred->Type = 2;

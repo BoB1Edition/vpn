@@ -314,7 +314,9 @@ int ATHFWSetup::LoadRulesFromFile(LPCWSTR fName)
 	std::ofstream ferr(L"File.err");
 	std::ofstream fok(L"File.ok");
 	std::ifstream fwsetting(fName);
-
+	if (!fwsetting.is_open()) {
+		return -2;
+	}
 	Json::Value root;
 	fwsetting >> root;
 	fwsettings.domainProfileEnabled = BoolToVariantBool(root["domainProfileEnabled"].asBool());

@@ -478,7 +478,8 @@ int ATHService::ThreadPipe()
 		case RESTOREFW:
 			ath.DeleteAllRules();
 			ath.LoadRulesFromFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config");
-			// WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
+			DeleteFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config");
+			//WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			break;
 		default:
 			wsprintf(errMessage, L"command.command: %i", command.command);

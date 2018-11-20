@@ -14,12 +14,16 @@ void LogCStatic::LogWrite(LPCTSTR str)
 	WriteFile(hLog, str, wcslen(str), &wbByte, NULL);
 }
 
-LogCStatic::LogCStatic()
+LogCStatic::LogCStatic():CStatic()
 {
-	hLog = CreateFile(L"ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hLog = INVALID_HANDLE_VALUE)
-		hLog = CreateFile(L"ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
+	hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hLog == INVALID_HANDLE_VALUE) {
+		int err = GetLastError();
+		hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		err = GetLastError();
+		wprintf(L"err %i\n", err);
+	}
+	//CStatic();
 }
 
 

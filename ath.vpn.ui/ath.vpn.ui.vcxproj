@@ -110,6 +110,7 @@
     <ClInclude Include="ath.vpn.ui.h" />
     <ClInclude Include="ath.vpn.uiDlg.h" />
     <ClInclude Include="ATHClientIfc.h" />
+    <ClInclude Include="ATHProgressBar.h" />
     <ClInclude Include="LogCStatic.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -119,6 +120,7 @@
     <ClCompile Include="ath.vpn.ui.cpp" />
     <ClCompile Include="ath.vpn.uiDlg.cpp" />
     <ClCompile Include="ATHClientIfc.cpp" />
+    <ClCompile Include="ATHProgressBar.cpp" />
     <ClCompile Include="LogCStatic.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
