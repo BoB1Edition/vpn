@@ -39,7 +39,7 @@
     <ClInclude Include="LogCStatic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ATHProgressBar.h">
+    <ClInclude Include="FirstStart.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,7 +59,7 @@
     <ClCompile Include="LogCStatic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ATHProgressBar.cpp">
+    <ClCompile Include="FirstStart.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

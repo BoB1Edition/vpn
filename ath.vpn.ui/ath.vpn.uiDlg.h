@@ -6,7 +6,7 @@
 
 #include "ATHClientIfc.h"
 #include "LogCStatic.h"
-#include "ATHProgressBar.h"
+#include "FirstStart.h"
 
 // диалоговое окно CathvpnuiDlg
 class CathvpnuiDlg : public CDialogEx
@@ -37,7 +37,7 @@ protected:
 private:
 	HANDLE hPipe;
 	ATHClientIfc *ath;
-	ATHProgressBar *ProgressBar;
+	FirstStart *fs;
 
 public:
 	CEdit ec_login;
