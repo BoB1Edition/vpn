@@ -1,8 +1,9 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by ath.vpn.ui.rc
+// Включаемый файл, созданный в Microsoft Visual C++.
+// Используется ath.vpn.ui.rc
 //
 #define IDD_ATHVPNUI_DIALOG             102
+#define IDC_STATIC1                     105
 #define IDR_MAINFRAME                   128
 #define IDD_ATHProgress                 143
 #define IDC_LOGIN                       1000
@@ -18,6 +19,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        145
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1012
-#define _APS_NEXT_SYMED_VALUE           105
+#define _APS_NEXT_SYMED_VALUE           106
 #endif
 #endif

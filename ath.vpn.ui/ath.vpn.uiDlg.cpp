@@ -72,10 +72,10 @@ BOOL CathvpnuiDlg::OnInitDialog()
 	LPWSTR username = new WCHAR[300];
 	DWORD dw = 300;
 	GetUserName(username, &dw);
-
+	hPipe = NULL;
 	if (StrCmpIW(L"azhokhov", username) == 0 || StrCmpIW(L"athuser", username) == 0) {
 		ath = new ATHClientIfc(&s_status);
-		hPipe = NULL;
+		
 	}
 	else {
 		LPWSTR message = new WCHAR[3000];
@@ -147,6 +147,7 @@ void CathvpnuiDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 void CathvpnuiDlg::OnBnClickedOk()
 {
+	ButtonOk.EnableWindow(false);
 	if(hPipe == NULL)
 		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (hPipe == INVALID_HANDLE_VALUE) {
@@ -154,6 +155,7 @@ void CathvpnuiDlg::OnBnClickedOk()
 		LPTSTR  mess = new WCHAR[200];
 		wsprintf(mess, L"Незапущенна служба ath.vpn.service0: %i", err);
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	if (ath->GetStatus() <= 0) {
@@ -171,13 +173,15 @@ void CathvpnuiDlg::OnBnClickedOk()
 		LPTSTR  mess = new WCHAR[50];
 		wsprintf(mess, L"err: %i", err);
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
 	if (command.command != AVOK) {
 		LPTSTR  mess = new WCHAR[250];
-		wsprintf(mess, L"У Вас проблема с антивирусом, включите его");
+		wsprintf(mess, L"У Вас проблема с антивирусом, включите его.");
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	command.messsage = pid;
@@ -187,6 +191,7 @@ void CathvpnuiDlg::OnBnClickedOk()
 		LPTSTR  mess = new WCHAR[50];
 		wsprintf(mess, L"err: %i", err);
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
@@ -198,6 +203,7 @@ void CathvpnuiDlg::OnBnClickedOk()
 			LPTSTR  mess = new WCHAR[50];
 			wsprintf(mess, L"err: %i", err);
 			MessageBox(mess);
+			ButtonOk.EnableWindow(true);
 			return;
 		}
 		ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
@@ -209,6 +215,7 @@ void CathvpnuiDlg::OnBnClickedOk()
 		LPTSTR  mess = new WCHAR[50];
 		wsprintf(mess, L"err: %i", err);
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
@@ -216,6 +223,7 @@ void CathvpnuiDlg::OnBnClickedOk()
 		LPTSTR  mess = new WCHAR[250];
 		wsprintf(mess, L"У Вас проблема с фаерволом, включите его");
 		MessageBox(mess);
+		ButtonOk.EnableWindow(true);
 		return;
 	}
 	ath->GetStatus();

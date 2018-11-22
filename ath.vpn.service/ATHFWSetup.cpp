@@ -154,6 +154,12 @@ int ATHFWSetup::DeleteAllRules()
 				LPWSTR errMessage = new WCHAR[32000];
 				wsprintf(errMessage, L"Rules: %s, not deleted: %i, %i\n", bstr, err, hrror);
 				ev.addLog(errMessage);
+				IErrorInfo *perrinfo = NULL;
+				GetErrorInfo(0, &perrinfo);
+				perrinfo->GetDescription(&bstr);
+				perrinfo->GetHelpContext((DWORD*)&err);
+				wsprintf(errMessage, L"perrinfo: %s, err: %i\n", bstr, err);
+				ev.addLog(errMessage);
 				hr = pEnum->Next(1, &var, &lFetch);
 
 				continue;

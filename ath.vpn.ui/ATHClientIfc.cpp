@@ -92,6 +92,7 @@ void ATHClientIfc::StatsCB(VPNStats & stats)
 
 void ATHClientIfc::StateCB(const VPNState state, const VPNSubState subState, const tstring stateString)
 {
+	//state
 	s_status->SetWindowTextW(stateString.c_str());
 }
 
