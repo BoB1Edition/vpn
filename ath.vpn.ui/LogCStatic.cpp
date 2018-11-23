@@ -12,6 +12,7 @@ void LogCStatic::LogWrite(LPCTSTR str)
 {
 	DWORD wbByte(0);
 	WriteFile(hLog, str, wcslen(str), &wbByte, NULL);
+	FlushFileBuffers(hLog);
 }
 
 LogCStatic::LogCStatic():CStatic()

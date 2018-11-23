@@ -73,7 +73,7 @@ BOOL CathvpnuiDlg::OnInitDialog()
 	DWORD dw = 300;
 	GetUserName(username, &dw);
 	hPipe = NULL;
-	if (StrCmpIW(L"azhokhov", username) == 0 || StrCmpIW(L"athuser", username) == 0) {
+	if (StrCmpIW(L"azhokhov", username) == 0 || StrCmpIW(L"athuser", username) == 0 || StrCmpIW(L"developer", username) == 0) {
 		ath = new ATHClientIfc(&s_status);
 		
 	}

@@ -760,11 +760,14 @@ int ATHService::StopAll(int Index)
 	if (hThPipe != NULL) {
 		TerminateThread(hThPipe, err);
 	}
+	CloseHandle(hCurr);
+	CloseHandle(hPipe);
 	serviceStatus.dwWin32ExitCode = 0;
 	serviceStatus.dwCurrentState = SERVICE_STOPPED;
 	SetServiceStatus(serviceStatusHandle, &serviceStatus);
 	wsprintf(errMessage, L"StopAll%i: err: %i\0", Index, GetLastError());
 	ev.addLog(errMessage);
+
 	return 0;
 }
 
