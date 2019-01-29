@@ -20,6 +20,31 @@
 CathvpnuiDlg::CathvpnuiDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_ATHVPNUI_DIALOG, pParent)
 {
+	try {
+		// Try to open the mutex.
+		HANDLE hMutex = OpenMutex(
+			MUTEX_ALL_ACCESS, 0, L"AHT.vpn.dlg");
+
+		if (!hMutex)
+			// Mutex doesn’t exist. This is
+			// the first instance so create
+			// the mutex.
+			hMutex =
+			CreateMutex(0, 0, L"AHT.vpn.dlg");
+		else {
+			MessageBeep(10);
+
+			CWnd *cwdd = FindWindow(L"#32770", L"");
+			cwdd->ShowWindow(SW_MAXIMIZE | SW_SHOW);
+			ExitProcess(0);
+		}
+
+		ReleaseMutex(hMutex);
+	}
+	catch (int err) {
+		ExitProcess(-1);
+	}
+	return;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -44,6 +69,7 @@ BEGIN_MESSAGE_MAP(CathvpnuiDlg, CDialogEx)
 	ON_WM_SHOWWINDOW()
 	ON_BN_CLICKED(IDOK, &CathvpnuiDlg::OnBnClickedOk)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDCANCEL, &CathvpnuiDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -51,15 +77,15 @@ END_MESSAGE_MAP()
 
 BOOL CathvpnuiDlg::OnInitDialog()
 {
-	fs = new FirstStart();
+	//fs = new FirstStart();
 	//fs->Create(IDD_ATHProgress, fs);
 	//ProgressBar->DoModal();
 	//ProgressBar->ShowWindow(SW_SHOW);
-	if (fs->DoModal() < 0) {
-		int i = GetLastError();
+	//if (fs->DoModal() < 0) {
+	//	int i = GetLastError();
 		//IErrorInfo *ei;
 		//GetErrorInfo(0, &ei);
-	}
+	//}
 
 
 	CDialogEx::OnInitDialog();
@@ -79,10 +105,12 @@ BOOL CathvpnuiDlg::OnInitDialog()
 	}
 	else {
 		LPWSTR message = new WCHAR[3000];
-		wsprintf(message, L"User: %s cannot use this program\0", username);
-		MessageBox(message);
+		wsprintf(message, L"Пользователь %s не может запустить данную программу, Вам необходимо перезайти в компьютер под пользователем ATHUser. Хотите это сделать сейчас?\0", username);
+		int Relogin = MessageBox(message, 0, MB_YESNO);
+		if (Relogin == 6) {
+			ExitWindows(0, 0);
+		}
 		ExitProcess(500);
-		return FALSE;
 	}
 	//ShowWindow(SW_MINIMIZE);
 
@@ -147,107 +175,181 @@ void CathvpnuiDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 void CathvpnuiDlg::OnBnClickedOk()
 {
-	ButtonOk.EnableWindow(false);
-	if(hPipe == NULL)
-		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	if (hPipe == INVALID_HANDLE_VALUE) {
-		int err = GetLastError();
-		LPTSTR  mess = new WCHAR[200];
-		wsprintf(mess, L"Незапущенна служба ath.vpn.service0: %i", err);
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
-	}
-	if (ath->GetStatus() <= 0) {
-		CloseHandle(hPipe);
-		ExitProcess(-1);
-	}
+	try {
+		ButtonOk.EnableWindow(false);
 
-	VPNCOMMAND command;
-	DWORD pid = GetCurrentProcessId();
-	command.messsage = pid;
-	command.command = CHECKAV;
-	DWORD dwByte;
-	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
-		int err = GetLastError();
-		LPTSTR  mess = new WCHAR[50];
-		wsprintf(mess, L"err: %i", err);
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
-	}
-	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
-	if (command.command != AVOK) {
-		LPTSTR  mess = new WCHAR[250];
-		wsprintf(mess, L"У Вас проблема с антивирусом, включите его.");
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
-	}
-	command.messsage = pid;
-	command.command = CHECKFW;
-	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
-		int err = GetLastError();
-		LPTSTR  mess = new WCHAR[50];
-		wsprintf(mess, L"err: %i", err);
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
-	}
-	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
-	if (command.command != FWOK) {
+		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+		int ul = ec_login.GetWindowTextLengthW() + 10;
+		int pl = ec_password.GetWindowTextLengthW() + 10;
+		LPTSTR u = new WCHAR[ul];
+		LPTSTR p = new WCHAR[pl];
+		int ecl = ec_login.GetWindowTextW(u, ul);
+		std::wstring wstr(u);
+		int f = wstr.find('@', 0);
+		if (f > 0)
+			wstr = wstr.substr(0, f);
+		f = wstr.find('\\', 0);
+		if (f > 0)
+			wstr = wstr.substr(f + 1, wstr.length());
+		u = (LPTSTR)wstr.c_str();
+		int ecp = ec_password.GetWindowTextW(p, pl);
+		if (ecl <= 0 && ecp <= 0) {
+			MessageBox(L"Не введен логин и пароль");
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		ec_login.EnableWindow(false);
+		ec_password.EnableWindow(false);
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			int err = GetLastError();
+			LPTSTR  mess = new WCHAR[200];
+			wsprintf(mess, L"Незапущенна служба ath.vpn.service0: %i", err);
+			MessageBox(mess);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		//MessageBox(L"GetStatus");
+		if (ath->GetStatus() < 0) {
+			CloseHandle(hPipe);
+			LPTSTR  mess = new WCHAR[200];
+			wsprintf(mess, L"GetStatus");
+			MessageBox(mess);
+			ExitProcess(-1);
+		}
+		//MessageBox(L"");
+		VPNCOMMAND command;
+		DWORD pid = GetCurrentProcessId();
 		command.messsage = pid;
-		command.command = CHANGEFW;
+		command.command = CHECKAV;
+		DWORD dwByte;
 		if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
 			int err = GetLastError();
 			LPTSTR  mess = new WCHAR[50];
 			wsprintf(mess, L"err: %i", err);
 			MessageBox(mess);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
 			ButtonOk.EnableWindow(true);
 			return;
 		}
-		ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+		BOOL r = ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+		//MessageBox(L"");
+		if (command.command != AVOK) {
+			LPTSTR  mess = new WCHAR[250];
+			wsprintf(mess, L"У Вас проблема с антивирусом, включите его.");
+			MessageBox(mess);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		command.messsage = pid;
+		command.command = CHECKFW;
+		if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+			int err = GetLastError();
+			LPTSTR  mess = new WCHAR[50];
+			wsprintf(mess, L"err: %i", err);
+			MessageBox(mess);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		//MessageBox(L"");
+		r = ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+		if (command.command != FWOK) {
+			command.messsage = pid;
+			command.command = CHANGEFW;
+			if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+				int err = GetLastError();
+				LPTSTR  mess = new WCHAR[50];
+				wsprintf(mess, L"err: %i", err);
+				MessageBox(mess);
+				ec_login.EnableWindow(true);
+				ec_password.EnableWindow(true);
+				ButtonOk.EnableWindow(true);
+				return;
+			}
+			//MessageBox(L"");
+			r = ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+		}
+		else {
+			command.messsage = pid;
+			command.command = CHANGEFW;
+			if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
+				int err = GetLastError();
+				LPTSTR  mess = new WCHAR[50];
+				wsprintf(mess, L"err: %i", err);
+				MessageBox(mess);
+				ec_login.EnableWindow(true);
+				ec_password.EnableWindow(true);
+				ButtonOk.EnableWindow(true);
+				return;
+			}
+			//MessageBox(L"");
+		}
+		r = ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
+		if (command.command != CHANGEFW) {
+			LPTSTR  mess = new WCHAR[250];
+			wsprintf(mess, L"У Вас проблема с фаерволом, включите его");
+			MessageBox(mess);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		//MessageBox(L"");
+		//ath->GetStatus();
+
+
+		WCHAR message[1024];
+		wsprintf(message, L"ecl: %i, ecp: %i, u: %s, p: %s", ecl, ecp, u, p);
+		if (!ath->connect(L"gate2.ath.ru", u, p)) {
+			//ShowWindow(SW_MINIMIZE);
+			if (!ath->connect(L"gate2.ath.ru", u, p)) {
+				unsigned int i = GetLastError();
+				command.command = RESTOREFW;
+				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
+				ButtonOk.EnableWindow(true);
+				MessageBox(L"Проверьте интернет соединение, а так же логин и пароль.");
+				return;
+			}
+		}
+		if (!ath->ConnectRDP()) {
+			unsigned int i = GetLastError();
+			ath->disconnect();
+			command.command = RESTOREFW;
+			WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
+			ButtonOk.EnableWindow(true);
+			MessageBox(L"Нестабильное соединение, проверьте интернет и перезагрузите компьютер");
+			return;
+		}
+		if (ath->GetStatus() != 1) {
+			command.messsage = pid;
+			command.command = RESTOREFW;
+			DWORD dwByte = 0;
+			WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
+			ec_login.EnableWindow(true);
+			ec_password.EnableWindow(true);
+			ButtonOk.EnableWindow(true);
+			return;
+		}
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, TRUE, NULL, SPIF_UPDATEINIFILE);
+		SystemParametersInfo(SPI_SETSCREENSAVESECURE, TRUE, NULL, SPIF_UPDATEINIFILE);
+		SystemParametersInfo(SPI_SETSCREENSAVETIMEOUT, 5 * 60, NULL, SPIF_UPDATEINIFILE);
+		//delete u, p;
 	}
-	command.messsage = pid;
-	command.command = CHANGEFW;
-	if (!WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL)) {
-		int err = GetLastError();
-		LPTSTR  mess = new WCHAR[50];
-		wsprintf(mess, L"err: %i", err);
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
+	catch (int err) {
+		MessageBox(L"Что-то пошло не так как планировалось, перезагрузите компьютер и попробуйте еще раз");
 	}
-	ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
-	if (command.command != CHANGEFW) {
-		LPTSTR  mess = new WCHAR[250];
-		wsprintf(mess, L"У Вас проблема с фаерволом, включите его");
-		MessageBox(mess);
-		ButtonOk.EnableWindow(true);
-		return;
-	}
-	ath->GetStatus();
-	int ul = ec_login.GetWindowTextLengthW() + 1;
-	int pl = ec_password.GetWindowTextLengthW() + 1;
-	LPTSTR u = new WCHAR[ul];
-	LPTSTR p = new WCHAR[pl];
-	ec_login.GetWindowTextW(u, ul);
-	ec_password.GetWindowTextW(p, pl);
-	if (ath->connect(L"gate1.ath.ru", u, p) && ath->ConnectRDP()) {
-		ShowWindow(SW_MINIMIZE);
-		//ButtonOk.SetWindowTextW(L"Disconnect");
-	}
-	else {
-		unsigned int i = GetLastError();
-		//MessageBox(L"Not connected", 0, i);
-	}
-	delete u, p;
 }
 
 
 void CathvpnuiDlg::OnDestroy()
 {
-	CDialogEx::OnDestroy();
+	
 	ath->deleteCred();
 	if (hPipe == NULL && ath->isConnected())
 		hPipe = CreateFile(L"\\\\.\\pipe\\ath.vpn", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -257,5 +359,14 @@ void CathvpnuiDlg::OnDestroy()
 	command.command = RESTOREFW;
 	DWORD dwByte = 0;
 	WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &dwByte, NULL);
+	//ReadFile(hPipe, (LPVOID)&command, sizeof(command), &dwByte, NULL);
 	delete ath;
+	CDialogEx::OnDestroy();
+}
+
+
+void CathvpnuiDlg::OnBnClickedCancel()
+{
+	// TODO: добавьте свой код обработчика уведомлений
+	CDialogEx::OnCancel();
 }

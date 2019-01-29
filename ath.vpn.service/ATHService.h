@@ -2,6 +2,8 @@
 
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "Netapi32.lib")
+#pragma comment(lib, "wbemuuid")
+#pragma comment(lib, "urlmon.lib")
 
 #include <Windows.h>
 #include <vector>
@@ -15,6 +17,8 @@
 #include <time.h>
 #include <Winnt.h>
 #include "ntsecapi.h"
+#include <wbemidl.h>
+#include "Urlmon.h"
 
 class ATHService;
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv);
@@ -78,7 +82,7 @@ private:
 	BOOL GetUserSid(PSID*  ppSidUser);
 
 	LPWSTR GeneratePassword();
-
+	bool Update();
 	const std::wstring chars = L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%^&$+-_!@#%?";
 
 public:

@@ -24,9 +24,9 @@ ATHFWSetup::~ATHFWSetup()
 
 int ATHFWSetup::addPolicy(FWStruct &fw) {
 	INetFwRule *rule = NULL;
-	
-	CoCreateInstance(__uuidof(NetFwRule), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&rule);
-	HRESULT hr;
+	HRESULT hr = CoInitialize(NULL);
+	hr = CoCreateInstance(__uuidof(NetFwRule), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwRule), (void**)&rule);
+	//HRESULT hr;
 	hr = rule->put_Direction(fw.Direction);
 	if (FAILED(hr)) {
 		err = hr;
@@ -106,11 +106,6 @@ int ATHFWSetup::addPolicy(FWStruct &fw) {
 		err = hr;
 		return err;
 	}
-	/*hr = rule->put_Profiles(fw.Profiles);
-	if (FAILED(hr)) {
-		err = hr;
-		return err;
-	}*/
 	hr = rule->put_Name(fw.Name);
 	if (FAILED(hr)) {
 		err = hr;
@@ -128,6 +123,7 @@ int ATHFWSetup::addPolicy(FWStruct &fw) {
 
 int ATHFWSetup::DeleteAllRules()
 {
+	fwMgr->RestoreDefaults();
 	IUnknown *pUnk = NULL;
 	RulesObject->get__NewEnum(&pUnk);
 	IEnumVARIANT *pEnum;
@@ -155,13 +151,9 @@ int ATHFWSetup::DeleteAllRules()
 				wsprintf(errMessage, L"Rules: %s, not deleted: %i, %i\n", bstr, err, hrror);
 				ev.addLog(errMessage);
 				IErrorInfo *perrinfo = NULL;
-				GetErrorInfo(0, &perrinfo);
-				perrinfo->GetDescription(&bstr);
-				perrinfo->GetHelpContext((DWORD*)&err);
-				wsprintf(errMessage, L"perrinfo: %s, err: %i\n", bstr, err);
 				ev.addLog(errMessage);
 				hr = pEnum->Next(1, &var, &lFetch);
-
+				pADs->get_Name(&bstr);
 				continue;
 			}
 			SysFreeString(bstr);
@@ -192,6 +184,13 @@ int ATHFWSetup::DeleteAllRules()
 
 int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 {
+	HANDLE hLog = 
+		CreateFile(fName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hLog != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hLog);
+		return 0;
+	}
 	std::ofstream fwsetting(fName);
 	fwsetting.flush();
 	fwsetting.close();
@@ -199,7 +198,10 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 	if(!fwsetting.is_open())
 		return -1;
 	FWSettings fwsettings = {};
-	HRESULT hr = fwPolicy2->get_FirewallEnabled(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainProfileEnabled);
+	HRESULT comInit = CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	HRESULT hr = CoCreateInstance(__uuidof(NetFwMgr), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwMgr), (void**)&fwMgr);
+	hr = CoCreateInstance(__uuidof(NetFwPolicy2), NULL, CLSCTX_INPROC_SERVER, __uuidof(INetFwPolicy2), (void**)&fwPolicy2);
+	hr = fwPolicy2->get_FirewallEnabled(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainProfileEnabled);
 	hr = fwPolicy2->get_BlockAllInboundTraffic(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainBlockAllInboundTraffic);
 	hr = fwPolicy2->get_DefaultInboundAction(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainDefaultInboundAction);
 	hr = fwPolicy2->get_DefaultOutboundAction(NET_FW_PROFILE2_DOMAIN, &fwsettings.domainDefaultOutboundAction);
@@ -268,12 +270,6 @@ int ATHFWSetup::SaveRulesToFile(LPCWSTR fName)
 			pADs->get_LocalPorts(&fw->LocalPorts);
 			pADs->get_Name(&fw->Name);
 			pADs->get_Profiles(&fw->Profiles);
-			/*if (fw->Profiles != 0) {
-				char * ctestProfiles = (char *)fw->Profiles;
-				wchar_t * wtestProfiles = (wchar_t *)fw->Profiles;
-
-				wprintf(L"wtestProfiles: %s", wtestProfiles);
-			}*/
 			pADs->get_Protocol(&fw->Protocol);
 			pADs->get_RemoteAddresses(&fw->RemoteAddresses);
 			pADs->get_RemotePorts(&fw->RemotePorts);
@@ -405,27 +401,10 @@ char * ATHFWSetup::BstrToChar(BSTR str) {
 	std::string *name = new std::string(base64_encode((const unsigned char*)finalstr.GetBSTR(), lenght + 2));
 	char *ret = (char*)name->c_str();
 	return ret;
-	/*
-	LPWSTR lpwstr = new WCHAR[SysStringLen(str) + 10];
-	wsprintf(lpwstr, L"%s\0", str);
-	char *cOut = new char[SysStringLen(str) + 11];
-	int conv = WideCharToMultiByte(1251, WC_COMPOSITECHECK, lpwstr, -1, cOut, 0, NULL, NULL);
-	conv = WideCharToMultiByte(1251, WC_COMPOSITECHECK, lpwstr, -1, cOut, conv, NULL, NULL);
-	if (conv == 0) {
-		wsprintf(lpwstr, L"err: conv %i, err: %i", conv, GetLastError());
-		return (char*)lpwstr;
-	}
-	return cOut;
-	*/
 }
 
 BSTR ATHFWSetup::CharToBstr(const char * str)
 {
-	/*if (strcmp("", str) != 0) {
-		bstr_t * ret = new bstr_t(str);
-		return ret->GetBSTR();
-	}
-	return NULL;*/
 	std::string *tmp = new std::string(str);
 	*tmp = base64_decode(*tmp);
 	BSTR bstr = (BSTR)tmp->c_str();

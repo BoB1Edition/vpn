@@ -5,7 +5,7 @@
 ATHClientIfc::ATHClientIfc(CStatic *s_status)
 {
 	Attach = false;
-	this->s_status = s_status;
+	this->s_status = (LogCStatic*)s_status;
 }
 
 
@@ -17,10 +17,13 @@ ATHClientIfc::~ATHClientIfc()
 
 int ATHClientIfc::GetStatus()
 {
-	if(!Attach)
+	if (!Attach) {
 		Attach = ClientIfc::attach(false, true, true, true);
-	if (!Attach)
+	}
+	if (!Attach) {
+		ClientIfc::detach();
 		return -1;
+	}
 	if(ClientIfc::isConnected())
 		return 1;
 	if (ClientIfc::isAvailable())
@@ -34,7 +37,6 @@ bool ATHClientIfc::connect(std::wstring host, wchar_t * username, wchar_t * pass
 	this->password = password;
 	if (ClientIfc::isConnected())
 		return true;
-	//setBanner(L"Banner");
 	setBannerResponse(true);
 	
 	if (ClientIfc::connect(host)) {
@@ -45,7 +47,20 @@ bool ATHClientIfc::connect(std::wstring host, wchar_t * username, wchar_t * pass
 
 bool ATHClientIfc::ConnectRDP()
 {
-	Sleep(1000 * 5);
+	for (int i = 0; i < 100; i++) {
+		hostent *h = gethostbyname("srvrdsnlb.ath.ru");
+		if (h != NULL)
+		{
+			break;
+		}
+		Sleep(500 * 10);
+	}
+	hostent *h = gethostbyname("srvrdsnlb.ath.ru");
+	if (h == NULL) {
+		ClientIfc::disconnect();
+		ClientIfc::connect(L"gate2.ath.ru");
+	}
+	Sleep(500 * 10);
 	CREDENTIAL *cred = (CREDENTIAL *) calloc(2, sizeof(CREDENTIAL));
 	cred->Flags = 0;
 	cred->Type = 2;
@@ -92,25 +107,26 @@ void ATHClientIfc::StatsCB(VPNStats & stats)
 
 void ATHClientIfc::StateCB(const VPNState state, const VPNSubState subState, const tstring stateString)
 {
-	//state
-	s_status->SetWindowTextW(stateString.c_str());
+	if(state == DISCONNECTING)
+	s_status->SetWindowText(stateString.c_str());
 }
 
 void ATHClientIfc::BannerCB(const tstring & banner)
 {
 	setBannerResponse(true);
-	s_status->SetWindowTextW(banner.c_str());
+	s_status->SetWindowText(banner.c_str());
 }
 
 void ATHClientIfc::NoticeCB(const tstring notice, const MessageType type)
 {
-	s_status->SetWindowTextW(notice.c_str());
+	//notice.compare(L"");
+	s_status->SetWindowText(notice.c_str());
 	//ClientIfc::setBannerResponse(true);
 }
 
 void ATHClientIfc::ServiceReadyCB()
 {
-	s_status->SetWindowTextW(L"ServiceReadyCB");
+	s_status->SetWindowText(L"ServiceReadyCB");
 	setBanner(L"ServiceReadyCB");
 }
 
@@ -146,7 +162,7 @@ void ATHClientIfc::UserPromptCB(ConnectPromptInfo & ConnectPrompt)
 void ATHClientIfc::CertBlockedCB(const tstring & rtstrUntrustedServer)
 {
 	setCertBlockedResponse(true);
-	s_status->SetWindowTextW(L"CertBlockedCB");
+	s_status->SetWindowText(L"CertBlockedCB");
 }
 
 void ATHClientIfc::CertWarningCB(const tstring & rtstrUntrustedServer, const std::list<tstring>& rltstrCertErrors, bool bAllowImport)

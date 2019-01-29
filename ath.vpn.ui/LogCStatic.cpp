@@ -2,7 +2,8 @@
 #include "LogCStatic.h"
 
 
-void LogCStatic::SetWindowTextW(LPCTSTR str)
+template <typename T>
+void LogCStatic::SetWindowTextW(T str)
 {
 	LogWrite(str);
 	CStatic::SetWindowTextW(str);
@@ -17,14 +18,13 @@ void LogCStatic::LogWrite(LPCTSTR str)
 
 LogCStatic::LogCStatic():CStatic()
 {
-	hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hLog == INVALID_HANDLE_VALUE) {
 		int err = GetLastError();
-		hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_ALL, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		hLog = CreateFile(L"C:\\Program Files (x86)\\ATH\\ATHlog.txt", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		err = GetLastError();
 		wprintf(L"err %i\n", err);
 	}
-	//CStatic();
 }
 
 

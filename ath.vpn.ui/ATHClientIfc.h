@@ -4,6 +4,7 @@
 #include "ClientIfc.h"
 #include "VPNCOMMAND.h"
 #include "wincred.h"
+#include "LogCStatic.h"
 
 class ATHClientIfc : public ClientIfc
 {
@@ -13,9 +14,9 @@ public:
 
 	int GetStatus();
 	void SetCallbackStatus(CStatic *s_status) {
-		this->s_status = s_status;
+		this->s_status = (CStatic*)s_status;
 	}
-	bool connect(std::wstring, wchar_t * username, wchar_t * password);
+	bool connect(std::wstring host, wchar_t * username, wchar_t * password);
 
 	bool ConnectRDP();
 	void deleteCred();

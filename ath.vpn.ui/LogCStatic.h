@@ -4,7 +4,8 @@ class LogCStatic :
 	public CStatic
 {
 public:
-	void SetWindowTextW(LPCTSTR str);
+	template <typename T>
+	void SetWindowTextW(T str);
 	void LogWrite(LPCTSTR str);
 	LogCStatic();
 	~LogCStatic();

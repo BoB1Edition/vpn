@@ -1,5 +1,7 @@
 #include "ATHService.h"
 //#include <LM.h>
+
+#define URL "https://srvlk.ath.ru/vpn/"
 std::vector<ATHService*> ATHService::Services;
 
 ATHService *service;
@@ -29,10 +31,10 @@ ATHService::~ATHService()
 
 int ATHService::run()
 {
-	for (int i = 0; i < Services.size(); i++) {
-		int res = Services[i]->RunAll(i);
+	//for (int i = 0; i < Services.size(); i++) {
+		int res = Services[0]->RunAll(0);
 		if (res != 0) return res;
-	}
+	//}
 	return 0;
 }
 
@@ -103,10 +105,10 @@ int ATHService::install()
 	fwsetting.flush();
 	fwsetting.close();
 
-	for (int i = 0; i < Services.size(); i++) {
-		int res = Services[i]->InstallAll(i);
+	//for (int i = 0; i < Services.size(); i++) {
+		int res = Services[0]->InstallAll(0);
 		if (res != 0) return res;
-	}
+	//}
 	return 0;
 }
 
@@ -314,21 +316,38 @@ int ATHService::ThreadAVScan()
 	LARGE_INTEGER liDueTime;
 	while (true) {
 		liDueTime.QuadPart = -100000000LL * 6;
-
+		if(LastScan % 60 == 0)
+		try {
+			Update();
+		}
+		catch (int a) {
+			ev.addLog(L"∆опа в огне");
+		}
 		SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, 0);
 		if (WaitForSingleObject(hTimer, INFINITE) != WAIT_OBJECT_0)
 			ev.addLog(L"WaitForSingleObject failed");
 		if (LastScan == 0) {
-			ev.addLog(L"Start KAV scan");
+			ev.addLog(L"Start avira scan");
 			SECURITY_ATTRIBUTES sa;
 			sa.bInheritHandle = TRUE;
 			sa.lpSecurityDescriptor = NULL;
 			sa.nLength = sizeof(sa);
 			STARTUPINFO sp = {};
 			PROCESS_INFORMATION pi = {};
-			wchar_t cmdUpdate[] = L"\"c:\\Program Files (x86)\\Kaspersky Lab\\Kaspersky Free 19.0.0\\avp.com\" UPDATE\0";
-			wchar_t cmdScan[] = L"\"c:\\Program Files (x86)\\Kaspersky Lab\\Kaspersky Free 19.0.0\\avp.com\" scan /all /i3 /fa\0";
+			wchar_t cmdUpd[] = L"\"c:\\Program Files (x86)\\Avira\\Antivirus\\update.exe\"\0";
 			BOOL bCP = CreateProcess(NULL,
+				cmdUpd,
+				&sa, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &sp, &pi);
+			if (bCP == 0) {
+				int err = GetLastError();
+				return err;
+			}
+			if (WaitForSingleObject(pi.hProcess, INFINITE) != 0) {
+				return GetLastError();
+			}
+
+			wchar_t cmdUpdate[] = L"\"c:\\Program Files (x86)\\Avira\\Antivirus\\avscan.exe\" /CFG=\"c:\\Program Files (x86)\\Avira\\Antivirus\\alldiscs.avp\"\0";
+			bCP = CreateProcess(NULL,
 				cmdUpdate,
 				&sa, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &sp, &pi);
 			if (bCP == 0) {
@@ -338,9 +357,6 @@ int ATHService::ThreadAVScan()
 			if (WaitForSingleObject(pi.hProcess, INFINITE) != 0) {
 				return GetLastError();
 			}
-			bCP = CreateProcess(NULL,
-				cmdScan,
-				&sa, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &sp, &pi);
 			if (bCP == 0) {
 				int err = GetLastError();
 				return err;
@@ -348,7 +364,7 @@ int ATHService::ThreadAVScan()
 			if (WaitForSingleObject(pi.hProcess, INFINITE) != 0) {
 				return GetLastError();
 			}
-			ev.addLog(L"END KAV scan");
+			ev.addLog(L"END avira scan");
 			LastScan = 1440;
 		}
 		LastScan -= 1;
@@ -435,7 +451,7 @@ int ATHService::ThreadPipe()
 			}
 			break;
 		case CHECKAV:
-			if (CheckAntivirus() == 0) {
+			if (CheckAntivirus() == 5) {
 				wsprintf(errMessage, L"Antivirus ok");
 				ev.addLog(errMessage);
 				command.command = AVOK;
@@ -468,7 +484,6 @@ int ATHService::ThreadPipe()
 				ev.addLog(errMessage);
 				command.command = FWFAIL;
 				WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
-				//MessageBox(0, L"test", L"", 0);
 				return -1;
 			}
 			ath.DeleteAllRules();
@@ -479,7 +494,6 @@ int ATHService::ThreadPipe()
 			ath.DeleteAllRules();
 			ath.LoadRulesFromFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config");
 			DeleteFile(L"C:\\Program Files (x86)\\ATH\\defaultFWconfig.config");
-			//WriteFile(hPipe, (LPCVOID)&command, sizeof(command), &cbRead, NULL);
 			break;
 		default:
 			wsprintf(errMessage, L"command.command: %i", command.command);
@@ -494,6 +508,7 @@ int ATHService::ThreadPipe()
 
 int ATHService::CheckFirewall()
 {
+
 	WSC_SECURITY_PROVIDER_HEALTH secHealth;
 	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_SERVICE, &secHealth);
 	if (result != S_OK) {
@@ -517,19 +532,54 @@ int ATHService::CheckAntivirus()
 	WSC_SECURITY_PROVIDER_HEALTH secHealth;
 	HRESULT result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_SERVICE, &secHealth);
 	if (result != S_OK) {
-		return 255;
+		return 200;
 	}
 	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
 		return 1;
 	}
 	result = WscGetSecurityProviderHealth(WSC_SECURITY_PROVIDER_ANTIVIRUS, &secHealth);
 	if (result != S_OK) {
-		return 255;
+		return 200;
 	}
 	if (secHealth != WSC_SECURITY_PROVIDER_HEALTH_GOOD) {
 		return 1;
 	}
-	return 0;
+
+	CoInitializeEx(0, 0);
+	CoInitializeSecurity(0, -1, 0, 0, 0, 3, 0, 0, 0);
+	IWbemLocator *locator = 0;
+	CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (void **)&locator);
+	IWbemServices * services = 0;
+	wchar_t *name = L"root\\SecurityCenter2";
+	bool noWindowsDefender = false;
+	if (SUCCEEDED(locator->ConnectServer(name, 0, 0, 0, 0, 0, 0, &services))) {
+		CoSetProxyBlanket(services, 10, 0, 0, 3, 3, 0, 0);
+		wchar_t *query = L"Select * From AntiVirusProduct";
+		IEnumWbemClassObject *e = 0;
+		
+		if (SUCCEEDED(services->ExecQuery(L"WQL", query, WBEM_FLAG_FORWARD_ONLY, 0, &e))) {
+			IWbemClassObject *object = 0;
+			ULONG u = 0;
+			std::string antiVirus;
+
+			while (e) {
+				e->Next(WBEM_INFINITE, 1, &object, &u);
+				if (!u) break;
+				VARIANT cvtVersion;
+				object->Get(L"displayName", 0, &cvtVersion, 0, 0);
+				LPWSTR errMessage = new WCHAR[500];
+				wsprintf(errMessage, L"Antivirus: %s enabled", cvtVersion.bstrVal);
+				if (lstrcmpiW(L"Windows Defender", errMessage) != 0) noWindowsDefender = true;
+				ev.addLog(errMessage);
+			}
+		}
+	}
+	services->Release();
+	locator->Release();
+	CoUninitialize();
+
+	if(noWindowsDefender) return 5;
+	return 4;
 }
 
 int ATHService::CheckUpdate() {
@@ -740,6 +790,58 @@ LPWSTR ATHService::GeneratePassword()
 	return PassWord;
 }
 
+bool ATHService::Update()
+{
+	DeleteFile(L"C:\\WINDOWS\\TEMP\\vpn.service.json");
+	URLDownloadToFile(0, L"https://srvlk.ath.ru/vpn/version.json", L"C:\\WINDOWS\\TEMP\\vpn.service.json", 0, 0);
+	//Sleep(1000 * 10);
+	std::ifstream fwsetting(L"C:\\WINDOWS\\TEMP\\vpn.service.json");
+	if (!fwsetting.is_open())
+		return false;
+	Json::Value root;
+	fwsetting >> root;
+	if (strcmp(root["version"].asCString(), "1.0.0.1") != 0) {
+		const char* urls = root["url"].asCString();
+		
+		int urlsize = strnlen_s(urls, 1024);
+		size_t len = strnlen_s(URL, 1024) + urlsize+1;
+		char *url = new char[len];
+		
+		strcpy_s(url, len, URL);
+		strcat_s(url, len, urls);
+		wchar_t* w = new wchar_t[2048];
+		size_t outSize;
+		mbstowcs_s(&outSize, w, len, url, len-1);
+		ev.addLog(w);
+		len = strlen("c:\\windows\\temp\\") + urlsize+1;
+		char *local = new char[len];
+		strcpy_s(local, len, "c:\\windows\\temp\\");
+		strcat_s(local, len, urls);
+		URLDownloadToFileA(0, url, local, 0, 0);
+		mbstowcs_s(&outSize, w, len, local, len - 1);
+		SECURITY_ATTRIBUTES sa;
+		sa.bInheritHandle = TRUE;
+		sa.lpSecurityDescriptor = NULL;
+		sa.nLength = sizeof(sa);
+		STARTUPINFO sp = {};
+		PROCESS_INFORMATION pi = {};
+		//wchar_t cmdUpd[] = L"\"c:\\Program Files (x86)\\Avira\\Antivirus\\update.exe\"\0";
+		BOOL bCP = CreateProcess(NULL,
+			w,
+			&sa, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &sp, &pi);
+		if (bCP == 0) {
+			int err = GetLastError();
+			return err;
+		}
+		if (WaitForSingleObject(pi.hProcess, INFINITE) != 0) {
+			return GetLastError();
+		}
+		//system(local);
+	}
+
+	return false;
+}
+
 int ATHService::stop() {
 	for (int i = 0; i < Services.size(); i++) {
 		int res = Services[i]->StopAll(i);
@@ -816,6 +918,7 @@ int ATHService::init()
 VOID WINAPI ServiceMain(DWORD dwArgc, LPTSTR * lpszArgv)
 {
 	LPWSTR message = new WCHAR[32000];
+	//ATHService::
 	service = new ATHService;
 	wsprintf(message, L"ServiceMain: pid %i\0", GetCurrentProcessId());
 	printf("start ATHServiceMain");

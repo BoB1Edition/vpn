@@ -104,7 +104,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>CURL_STATICLIB;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CURL_STATICLIB;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Shared;$(SOLUTIONDIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\include;$(SOLUTIONDIR)packages\curl.7.30.0.2\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -116,6 +116,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>jsoncpp.lib;Wscapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SOLUTIONDIR)packages\jsoncpp-vc140-static-64.1.8.0\lib\native\libs\x64\static\Debug;$(SOLUTIONDIR)packages\curl.7.30.0.2\build\native\lib\v110\x64\Debug\static;$(SOLUTIONDIR)packages\openssl.1.0.1.21\build\native\lib\v110\x64\Debug\static\cdecl;$(SOLUTIONDIR)packages\libssh2.1.4.3.3\build\native\lib\v110\x64\Debug\static\cdecl;$(SOLUTIONDIR)packages\zlib.1.2.8.1\build\native\lib\v110\x64\Release\static\cdecl</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <CLRSupportLastError>Enabled</CLRSupportLastError>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapExports>true</MapExports>
     </Link>
     <Manifest>
       <UpdateFileHashes>true</UpdateFileHashes>
@@ -123,6 +127,10 @@
     <ProjectReference>
       <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -177,10 +185,14 @@
     <ClInclude Include="ATHService.h" />
     <ClInclude Include="EventMessage.h" />
     <ClInclude Include="Event_log.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Event_log.mc" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ath.vpn.service.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
